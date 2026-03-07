@@ -55,6 +55,11 @@ const authenticateToken = (req, res, next) => {
 // Endpoint de Login
 app.post('/api/auth/login', async (req, res) => {
   const { usuario, password } = req.body;
+  
+  if (!usuario || !password) {
+    return res.status(400).json({ error: 'Usuario y contraseña son requeridos' });
+  }
+
   try {
     // Buscar usuario con JOIN para obtener nombres de rol y sucursal
     const sql = `
@@ -68,16 +73,20 @@ app.post('/api/auth/login', async (req, res) => {
     const result = await pool.query(sql, [usuario]);
     
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Usuario no encontrado o inactivo' });
+      console.log(`[LOGIN] Usuario no encontrado: ${usuario}`);
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
 
     const user = result.rows[0];
     
-    // Verificar contraseña (soporta texto plano para admin inicial y bcrypt)
+    // VERIFICACIÓN ROBUSTA DE CONTRASEÑA
     let validPassword = false;
+    
+    // Caso 1: Comparación directa (texto plano para admin inicial)
     if (user.password_hash === password) {
       validPassword = true;
     } else {
+      // Caso 2: Intento con bcrypt
       try {
         validPassword = await bcrypt.compare(password, user.password_hash);
       } catch (e) {
@@ -86,7 +95,8 @@ app.post('/api/auth/login', async (req, res) => {
     }
     
     if (!validPassword) {
-      return res.status(401).json({ error: 'Contraseña incorrecta' });
+      console.log(`[LOGIN] Contraseña incorrecta para el usuario: ${usuario}`);
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
 
     // Generar un token JWT
@@ -101,6 +111,8 @@ app.post('/api/auth/login', async (req, res) => {
       { expiresIn: '8h' }
     );
 
+    console.log(`[LOGIN SUCCESS] Usuario: ${usuario} ha iniciado sesión desde ${req.ip}`);
+
     res.json({ 
       token, 
       user: { 
@@ -113,8 +125,8 @@ app.post('/api/auth/login', async (req, res) => {
       } 
     });
   } catch (err) {
-    console.error('Error en login:', err);
-    res.status(500).json({ error: 'Error en el servidor' });
+    console.error('[LOGIN ERROR] Error en el servidor:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
