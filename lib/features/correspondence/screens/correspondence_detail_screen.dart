@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../auth/auth_provider.dart';
 import '../models/correspondence_model.dart';
 import '../models/tracking_model.dart';
+import '../services/pdf_service.dart';
 import 'register_document_screen.dart';
 
 class CorrespondenceDetailScreen extends ConsumerStatefulWidget {
@@ -29,8 +30,19 @@ class _CorrespondenceDetailScreenState
 
   void _openFile() {
     if (widget.doc.filePath != null) {
-      Process.run('explorer.exe', [widget.doc.filePath!]);
+      // Si es una URL de Supabase, la abrimos en el navegador
+      if (widget.doc.filePath!.startsWith('http')) {
+        // En una app real usaríamos url_launcher
+        // Por ahora simulamos la apertura de la URL
+        print('Abriendo URL: ${widget.doc.filePath}');
+      } else {
+        Process.run('explorer.exe', [widget.doc.filePath!]);
+      }
     }
+  }
+
+  void _generateOfficialReport() async {
+    await PdfService.generateOfficialPdf(widget.doc);
   }
 
   void _refreshTracking() {
@@ -138,9 +150,21 @@ class _CorrespondenceDetailScreenState
       appBar: AppBar(
         title: Text('Detalle de CITE: ${widget.doc.cite}'),
         actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: OutlinedButton.icon(
+              onPressed: _generateOfficialReport,
+              icon: const Icon(Icons.print),
+              label: const Text('IMPRIMIR OFICIAL'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.blue,
+                side: const BorderSide(color: Colors.blue),
+              ),
+            ),
+          ),
           if (canReceive && isDestinatario)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
               child: ElevatedButton.icon(
                 onPressed: _handleReceive,
                 icon: const Icon(Icons.check),
@@ -272,6 +296,38 @@ class _CorrespondenceDetailScreenState
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          
+                          // SECCIÓN DE FIRMA DIGITAL (AÑADIDA)
+                          if (widget.doc.firmaUrl != null) ...[
+                            const Divider(height: 32),
+                            const Text(
+                              'Autorización Digital',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey[300]!),
+                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.white,
+                              ),
+                              child: Column(
+                                children: [
+                                  Image.network(
+                                    widget.doc.firmaUrl!,
+                                    height: 80,
+                                    errorBuilder: (context, error, stackTrace) => 
+                                      const Icon(Icons.error_outline, color: Colors.red),
+                                  ),
+                                  const Text(
+                                    'FIRMADO ELECTRÓNICAMENTE',
+                                    style: TextStyle(fontSize: 8, color: Colors.grey, letterSpacing: 1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

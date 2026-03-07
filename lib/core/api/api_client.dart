@@ -21,9 +21,10 @@ class ApiClient {
   }
 
   final _dio = Dio(BaseOptions(
-    // CAMBIAR ESTO: Cuando tengas la URL de Render, ponla aquí
-    baseUrl: kIsWeb ? 'http://localhost:3000/api' : 'http://192.168.0.26:3000/api',
+    // URL de producción en Render para acceso remoto universal
+    baseUrl: kIsWeb ? 'https://siscorrespondencia.onrender.com/api' : 'https://siscorrespondencia.onrender.com/api',
     connectTimeout: const Duration(seconds: 15),
+    receiveTimeout: const Duration(seconds: 15),
   ));
 
   // Guardar token después del login

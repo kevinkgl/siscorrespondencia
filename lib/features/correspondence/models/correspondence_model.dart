@@ -15,6 +15,9 @@ class CorrespondenceModel {
   final DateTime fechaEmision;
   final DateTime? fechaLimite;
   final String? filePath;
+  final String? sucursalOrigen;
+  final String? sucursalDestino;
+  final String? firmaUrl;
 
   CorrespondenceModel({
     required this.id,
@@ -31,6 +34,9 @@ class CorrespondenceModel {
     required this.fechaEmision,
     this.fechaLimite,
     this.filePath,
+    this.sucursalOrigen,
+    this.sucursalDestino,
+    this.firmaUrl,
   });
 
   factory CorrespondenceModel.fromMap(Map<String, dynamic> map) {
@@ -46,9 +52,18 @@ class CorrespondenceModel {
       estado: map['estado'],
       clasificacion: map['clasificacion'],
       prioridad: map['prioridad'],
-      fechaEmision: map['fecha_emision'],
-      fechaLimite: map['fecha_limite'],
+      fechaEmision: map['fecha_emision'] is String 
+          ? DateTime.parse(map['fecha_emision']) 
+          : map['fecha_emision'],
+      fechaLimite: map['fecha_limite'] != null 
+          ? (map['fecha_limite'] is String 
+              ? DateTime.parse(map['fecha_limite']) 
+              : map['fecha_limite'])
+          : null,
       filePath: map['file_path'],
+      sucursalOrigen: map['sucursal_origen_nombre'],
+      sucursalDestino: map['sucursal_destino_nombre'],
+      firmaUrl: map['firma_url'],
     );
   }
 

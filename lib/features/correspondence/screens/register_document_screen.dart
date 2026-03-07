@@ -127,20 +127,27 @@ class _RegisterDocumentScreenState
 
     try {
       String? savedPath;
-      if (_attachedFile != null) {
-        // En offline, guardamos solo la ruta temporal
-        savedPath = _isOnline
-            ? await ref
-                  .read(correspondenceRepoProvider)
-                  .saveFileLocally(_attachedFile!, _generatedCite)
-            : _attachedFile!.path;
-      }
-
-      // Convertir firma a bytes
+      String? firmaUrl;
+      
+      // Convertir firma a bytes (INDISPENSABLE PARA VALIDEZ)
       final signatureBytes = await _signatureController.toPngBytes();
 
       if (_isOnline) {
-        // REGISTRO ONLINE
+        // 1. Subir archivo adjunto (si hay)
+        if (_attachedFile != null) {
+          savedPath = await ref
+              .read(correspondenceRepoProvider)
+              .uploadFileToCloud(_attachedFile!, _generatedCite);
+        }
+        
+        // 2. Subir firma digital (si hay)
+        if (signatureBytes != null) {
+          firmaUrl = await ref
+              .read(correspondenceRepoProvider)
+              .uploadSignatureToCloud(signatureBytes, _generatedCite);
+        }
+
+        // REGISTRO ONLINE FINAL
         await ref
             .read(correspondenceRepoProvider)
             .registerCorrespondence(
@@ -157,7 +164,7 @@ class _RegisterDocumentScreenState
               prioridad: _prioridad,
               fechaLimite: _fechaLimite,
               filePath: savedPath,
-              // TODO: Enviar firma al backend (bytes o base64)
+              firmaUrl: firmaUrl,
             );
       } else {
         // REGISTRO OFFLINE (Local SQLite)
@@ -171,7 +178,7 @@ class _RegisterDocumentScreenState
           'clasificacion': _clasificacion,
           'prioridad': _prioridad,
           'fecha_limite': _fechaLimite?.toIso8601String(),
-          'file_path': savedPath,
+          'file_path': _attachedFile?.path,
           'firma_digital': signatureBytes,
           'created_at': DateTime.now().toIso8601String(),
         });

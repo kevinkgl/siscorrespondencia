@@ -34,7 +34,9 @@ class _CorrespondenceListScreenState
 
     final Future<List<CorrespondenceModel>> fetchDocuments =
         (_searchQuery.isEmpty && _selectedEstado == null)
-        ? (widget.isInbox ? repo.getInbox(user.id) : repo.getOutbox(user.id))
+        ? (widget.isInbox 
+            ? repo.getInbox(user.id, sucursalId: user.sucursalId, role: user.role) 
+            : repo.getOutbox(user.id, sucursalId: user.sucursalId, role: user.role))
         : repo.searchCorrespondence(
             query: _searchQuery,
             estado: _selectedEstado,

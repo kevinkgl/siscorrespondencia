@@ -1,31 +1,32 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/api/api_client.dart';
 import '../models/correspondence_model.dart';
 import '../models/tracking_model.dart';
 
 class CorrespondenceRepository {
   final ApiClient _apiClient = ApiClient();
+  final _supabase = Supabase.instance.client;
 
-  // Función para guardar el archivo en una carpeta segura de la aplicación
-  Future<String?> saveFileLocally(File file, String cite) async {
+  // Función para subir el archivo a la nube (Supabase Storage)
+  Future<String?> uploadFileToCloud(File file, String cite) async {
     try {
-      final directory = await getApplicationDocumentsDirectory();
-      final appPath = p.join(directory.path, 'SistemaCorrespondencia', 'Documentos');
-      final folder = Directory(appPath);
-      
-      if (!await folder.exists()) {
-        await folder.create(recursive: true);
-      }
-
       final extension = p.extension(file.path);
       final fileName = '${cite.replaceAll('-', '_')}$extension';
-      final savedFile = await file.copy(p.join(appPath, fileName));
       
-      return savedFile.path;
+      // Subir al bucket 'documentos' que creamos
+      await _supabase.storage.from('documentos').upload(
+        fileName,
+        file,
+        fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+      );
+
+      // Obtener la URL pública para guardarla en la base de datos
+      final String publicUrl = _supabase.storage.from('documentos').getPublicUrl(fileName);
+      return publicUrl;
     } catch (e) {
-      print('Error al guardar archivo: $e');
+      print('Error al subir a Supabase Storage: $e');
       return null;
     }
   }
@@ -46,8 +47,8 @@ class CorrespondenceRepository {
     return result.map((row) => TrackingModel.fromMap(row)).toList();
   }
 
-  Future<List<CorrespondenceModel>> getOutbox(int userId) async {
-    const sql = '''
+  Future<List<CorrespondenceModel>> getOutbox(int userId, {int? sucursalId, String? role}) async {
+    String sql = '''
       SELECT c.id, c.cite_numero, t.nombre as tipo_nombre, u.nombre_completo as remitente_nombre, 
              d.nombre_completo as destinatario_nombre, c.destinatario_externo, c.asunto, 
              c.estado, c.clasificacion, c.prioridad, c.fecha_emision, c.fecha_limite, c.file_path,
@@ -58,17 +59,31 @@ class CorrespondenceRepository {
       LEFT JOIN usuarios d ON c.destinatario_id = d.id
       LEFT JOIN sucursales s1 ON c.sucursal_origen_id = s1.id
       LEFT JOIN sucursales s2 ON c.sucursal_destino_id = s2.id
-      WHERE c.remitente_id = $1
-      ORDER BY c.fecha_emision DESC
+      WHERE 1=1
     ''';
 
-    final result = await _apiClient.query(sql, params: [userId]);
+    List<dynamic> params = [];
+    
+    if (role == 'ADMIN') {
+      // Admin ve todo, no añadimos filtros adicionales de propiedad
+    } else if (role == 'JEFE_AGENCIA' && sucursalId != null) {
+      // Jefe de Agencia ve todo lo enviado desde su sucursal
+      sql += ' AND c.sucursal_origen_id = \$1';
+      params.add(sucursalId);
+    } else {
+      // Usuario normal solo ve lo que él mismo envió
+      sql += ' AND c.remitente_id = \$1';
+      params.add(userId);
+    }
 
+    sql += ' ORDER BY c.fecha_emision DESC';
+
+    final result = await _apiClient.query(sql, params: params);
     return result.map((row) => CorrespondenceModel.fromMap(row)).toList();
   }
 
-  Future<List<CorrespondenceModel>> getInbox(int userId) async {
-    const sql = '''
+  Future<List<CorrespondenceModel>> getInbox(int userId, {int? sucursalId, String? role}) async {
+    String sql = '''
       SELECT c.id, c.cite_numero, t.nombre as tipo_nombre, u.nombre_completo as remitente_nombre, 
              d.nombre_completo as destinatario_nombre, c.destinatario_externo, c.asunto, 
              c.estado, c.clasificacion, c.prioridad, c.fecha_emision, c.fecha_limite, c.file_path,
@@ -79,12 +94,26 @@ class CorrespondenceRepository {
       LEFT JOIN usuarios d ON c.destinatario_id = d.id
       LEFT JOIN sucursales s1 ON c.sucursal_origen_id = s1.id
       LEFT JOIN sucursales s2 ON c.sucursal_destino_id = s2.id
-      WHERE c.destinatario_id = $1
-      ORDER BY c.fecha_emision DESC
+      WHERE 1=1
     ''';
 
-    final result = await _apiClient.query(sql, params: [userId]);
+    List<dynamic> params = [];
 
+    if (role == 'ADMIN') {
+      // Admin ve todo
+    } else if (role == 'JEFE_AGENCIA' && sucursalId != null) {
+      // Jefe de Agencia ve todo lo destinado a su sucursal
+      sql += ' AND c.sucursal_destino_id = \$1';
+      params.add(sucursalId);
+    } else {
+      // Usuario normal solo ve lo que va dirigido a él
+      sql += ' AND c.destinatario_id = \$1';
+      params.add(userId);
+    }
+
+    sql += ' ORDER BY c.fecha_emision DESC';
+
+    final result = await _apiClient.query(sql, params: params);
     return result.map((row) => CorrespondenceModel.fromMap(row)).toList();
   }
 
@@ -117,6 +146,26 @@ class CorrespondenceRepository {
     return '$prefijo-$codSucursal-$year-$correlativo';
   }
 
+  // Función para subir la firma digital (PNG bytes) a la nube
+  Future<String?> uploadSignatureToCloud(dynamic signatureBytes, String cite) async {
+    try {
+      final fileName = 'firma_${cite.replaceAll('-', '_')}.png';
+      
+      // Subir al bucket 'firmas'
+      await _supabase.storage.from('firmas').uploadBinary(
+        fileName,
+        signatureBytes,
+        fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+      );
+
+      final String publicUrl = _supabase.storage.from('firmas').getPublicUrl(fileName);
+      return publicUrl;
+    } catch (e) {
+      print('Error al subir firma a Supabase: $e');
+      return null;
+    }
+  }
+
   Future<int> registerCorrespondence({
     required String cite,
     required int tipoId,
@@ -131,13 +180,14 @@ class CorrespondenceRepository {
     required String prioridad,
     required DateTime? fechaLimite,
     String? filePath,
+    String? firmaUrl,
   }) async {
     const sql = '''
       INSERT INTO correspondencia (
         cite_numero, tipo_id, remitente_id, destinatario_id, destinatario_externo,
         sucursal_origen_id, sucursal_destino_id, asunto, contenido, 
-        clasificacion, prioridad, fecha_limite, qr_data, file_path
-      ) VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11, \$12, \$13, \$14)
+        clasificacion, prioridad, fecha_limite, qr_data, file_path, firma_url
+      ) VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11, \$12, \$13, \$14, \$15)
       RETURNING id
     ''';
 
@@ -146,7 +196,7 @@ class CorrespondenceRepository {
       params: [
         cite, tipoId, remitenteId, destinatarioId, destinatarioExterno,
         sucursalOrigenId, sucursalDestinoId, asunto, contenido,
-        clasificacion, prioridad, fechaLimite, cite, filePath
+        clasificacion, prioridad, fechaLimite, cite, filePath, firmaUrl
       ],
     );
 

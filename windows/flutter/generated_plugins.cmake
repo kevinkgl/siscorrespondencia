@@ -3,12 +3,14 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  app_links
   connectivity_plus
   firebase_core
   local_notifier
   printing
   screen_retriever
   sqlite3_flutter_libs
+  url_launcher_windows
   window_manager
 )
 
