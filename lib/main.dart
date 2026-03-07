@@ -3,9 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'firebase_options.dart';
+// import 'firebase_options.dart';
 import 'core/router/app_router.dart';
 import 'core/services/notification_service.dart';
 
@@ -18,10 +18,12 @@ void main() async {
     anonKey: 'sb_publishable_rLwrtdkq_G4G7plIfMtDDQ_kR6xi5dj',
   );
 
-  // Inicialización de Firebase
+  /*
+  // Comentado para evitar errores de compilación en Windows
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  */
   
   // Inicialización de notificaciones (solo si no es web)
   if (!kIsWeb && !Platform.isAndroid && !Platform.isIOS) {

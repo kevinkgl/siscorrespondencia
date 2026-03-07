@@ -38,7 +38,7 @@ class CorrespondenceRepository {
       FROM seguimiento s
       JOIN usuarios u1 ON s.usuario_origen_id = u1.id
       LEFT JOIN usuarios u2 ON s.usuario_destino_id = u2.id
-      WHERE s.correspondence_id = $1
+      WHERE s.correspondence_id = \$1
       ORDER BY s.fecha_movimiento ASC
     ''';
     
@@ -65,13 +65,11 @@ class CorrespondenceRepository {
     List<dynamic> params = [];
     
     if (role == 'ADMIN') {
-      // Admin ve todo, no añadimos filtros adicionales de propiedad
+      // Admin ve todo
     } else if (role == 'JEFE_AGENCIA' && sucursalId != null) {
-      // Jefe de Agencia ve todo lo enviado desde su sucursal
       sql += ' AND c.sucursal_origen_id = \$1';
       params.add(sucursalId);
     } else {
-      // Usuario normal solo ve lo que él mismo envió
       sql += ' AND c.remitente_id = \$1';
       params.add(userId);
     }
@@ -102,11 +100,9 @@ class CorrespondenceRepository {
     if (role == 'ADMIN') {
       // Admin ve todo
     } else if (role == 'JEFE_AGENCIA' && sucursalId != null) {
-      // Jefe de Agencia ve todo lo destinado a su sucursal
       sql += ' AND c.sucursal_destino_id = \$1';
       params.add(sucursalId);
     } else {
-      // Usuario normal solo ve lo que va dirigido a él
       sql += ' AND c.destinatario_id = \$1';
       params.add(userId);
     }
@@ -276,28 +272,28 @@ class CorrespondenceRepository {
 
     if (query != null && query.isNotEmpty) {
       sql += ''' AND (
-        to_tsvector('spanish', coalesce(c.asunto, '') || ' ' || coalesce(c.contenido, '')) @@ plainto_tsquery('spanish', \$$paramCount)
-        OR c.cite_numero ILIKE \$$paramCount 
-        OR u.nombre_completo ILIKE \$$paramCount
+        to_tsvector('spanish', coalesce(c.asunto, '') || ' ' || coalesce(c.contenido, '')) @@ plainto_tsquery('spanish', \$\$paramCount)
+        OR c.cite_numero ILIKE \$\$paramCount 
+        OR u.nombre_completo ILIKE \$\$paramCount
       )''';
-      params.add('%$query%'); // ILIKE necesita %
+      params.add('%$query%'); 
       paramCount++;
     }
 
     if (sucursalId != null) {
-      sql += ' AND (c.sucursal_origen_id = \$$paramCount OR c.sucursal_destino_id = \$$paramCount)';
+      sql += ' AND (c.sucursal_origen_id = \$\$paramCount OR c.sucursal_destino_id = \$\$paramCount)';
       params.add(sucursalId);
       paramCount++;
     }
 
     if (estado != null) {
-      sql += ' AND c.estado = \$$paramCount';
+      sql += ' AND c.estado = \$\$paramCount';
       params.add(estado);
       paramCount++;
     }
 
     if (startDate != null && endDate != null) {
-      sql += ' AND c.fecha_emision BETWEEN \$$paramCount AND \$${paramCount + 1}';
+      sql += ' AND c.fecha_emision BETWEEN \$\$paramCount AND \$\$${paramCount + 1}';
       params.add(startDate);
       params.add(endDate);
     }

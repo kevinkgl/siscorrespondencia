@@ -47,11 +47,11 @@ class ApiClient {
     } else {
       final db = DatabaseService();
       final connection = await db.connection;
+      
+      // Convertimos el SQL de estilo $1 a parámetros posicionales estándar
       final result = await connection.execute(
-        Sql.named(sql.replaceAll(RegExp(r'\$(\d+)'), r'@p$1')),
-        parameters: {
-          for (var i = 0; i < (params?.length ?? 0); i++) 'p${i + 1}': params![i]
-        },
+        sql,
+        parameters: params ?? [],
       );
       return result.map((row) => row.toColumnMap()).toList();
     }
