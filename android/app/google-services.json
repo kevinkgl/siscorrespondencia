@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "665343633304",
+    "project_id": "sistemacorrespondencia-3fbba",
+    "storage_bucket": "sistemacorrespondencia-3fbba.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:665343633304:android:7e24a6ad5b7f5be401aded",
+        "android_client_info": {
+          "package_name": "com.example.sistema_correspondenciaf"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJ1UEOzv43rtcrUI8x6PQZoI-HcdLEPSs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

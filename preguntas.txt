@@ -1,0 +1,374 @@
+
+
+  El problema técnico:
+  Los navegadores web (Chrome, Firefox, etc.) bloquean las conexiones directas a bases de datos SQL (como        
+  PostgreSQL) por razones de seguridad (CORS y falta de soporte de sockets TCP directos). Tu código actual de    
+  postgres: ^3.0.0 funcionará en Windows/Android, pero fallará en la Web al intentar conectar.
+
+  ---
+
+  Plan de Acción: Conectar Flutter Web a PostgreSQL
+
+  Para que tu aplicación web use tu base de datos actual, necesitamos un intermediario (API). Aquí tienes el plan  paso a paso:
+
+
+  1. Arquitectura de la Solución
+  En lugar de App -> PostgreSQL, usaremos:
+  `Flutter Web (HTTPS)` <---> `API REST (Node.js/Python/Dart)` <---> `PostgreSQL`
+
+  2. Implementación Técnica (Fases)
+
+
+  Fase A: Crear el Servidor API (El "Puente")
+  Tienes dos opciones principales:
+   1. Dart Frog o Shelf (Recomendado): Permite usar Dart en el servidor y reutilizar tus modelos de datos.       
+   2. Node.js (Express): Muy común y fácil de desplegar en Firebase Functions o Render.
+
+
+  Fase B: Crear Endpoints de Autenticación
+  Debes crear rutas en tu API como:
+   * POST /login: Recibe usuario/clave, consulta a Postgres, verifica con bcrypt y devuelve un Token (JWT).      
+   * GET /correspondencia: Recibe el Token y devuelve los datos de la DB.
+
+
+  Fase C: Adaptar Flutter (Frontend)
+  Debes modificar tu lógica de conexión para detectar si estás en la Web:
+   1 if (kIsWeb) {
+   2   // Usar http.post('https://tu-api.com/login')
+   3 } else {
+   4   // Seguir usando tu conexión directa a Postgres (Desktop/Mobile)  
+   5 }
+
+  ---
+
+
+  3. Hoja de Ruta Detallada
+
+
+
+  ┌─────┬───────────────────────┬───────────────────────────────────────────────────────────────────────────────┐  │ Pas │ Acción                │ Herramienta                                                                   │  ├─────┼───────────────────────┼───────────────────────────────────────────────────────────────────────────────┤  │ 1   │ **Elegir Hosting par… │ Firebase Functions (ya que usas Firebase) o un servidor VPS.                  │  │ 2   │ **Crear el Servicio … │ Agregar el paquete dio o http a tu pubspec.yaml.                              │  │ 3   │ **Refactorizar Repos… │ Crear una interfaz de "Data Source" que decida si llamar a la API (Web) o a … │  │ 4   │ Configurar CORS       │ Configurar el servidor para que acepte peticiones desde `sistemacorresponden… │  └─────┴───────────────────────┴───────────────────────────────────────────────────────────────────────────────┘
+
+  ---
+
+  ¿Cómo quieres proceder?
+
+
+  Puedo ayudarte con cualquiera de estos puntos. Mis recomendaciones iniciales son:
+
+
+   1. ¿Tienes ya un servidor donde corre tu base de datos Postgres? (Para saber dónde alojar la API).
+   2. ¿Te gustaría que cree un ejemplo de una API sencilla en Dart para que veas cómo conectarla a tu Postgres   
+      actual?
+   3. ¿Quieres que instale `dio` en tu proyecto para preparar el terreno para las peticiones web?
+
+
+  Advertencia: No intentes usar el paquete postgres directamente en la web, ya que el compilador te dará error de  "dart:io not supported". Necesitaremos obligatoriamente el puente API.
+
+
+  8
+  8
+  8
+  8
+  8
+  8
+  8
+  8
+  8
+  8
+  8
+  8
+  8
+  8
+
+  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀ > pregunta esta appa quiero que este pensada para varias sucursales en un pais determinado y que nuestra app se 
+   instale en cualquier maquina o sea accesible en nuestro internes y que se conecte remostamente esta app esta  
+   pensado asi podrias revisarlo y en caso que no guiame para poder programarla asi, y dame lso pasos a seguir   
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+✦ Esta es una visión excelente y muy común en sistemas empresariales modernos. Para que tu aplicación funcione en  múltiples sucursales y sea accesible remotamente desde cualquier lugar, debemos evolucionar la arquitectura    
+  actual.
+
+
+  Diagnóstico de tu arquitectura actual:
+   * Punto Débil: La base de datos en tu PC local. Si tu PC se apaga o cambia de IP, ninguna sucursal podrá   
+     trabajar.
+   * Punto de Mejora: El código de Flutter debe dejar de usar conexiones directas (postgres: ^3.0.0) y pasar a
+     usar exclusivamente el ApiClient que acabamos de crear.
+
+  ---
+
+
+  Plan de Acción para un Sistema Multisede y Remoto
+
+
+  1. Centralización (La Nube)
+  Para que cualquier máquina en el país se conecte, la base de datos y la API deben estar en un servidor 24/7 con  IP pública.
+   * Base de Datos: Migrar tu Postgres local a Supabase o Neon.tech (Postgres gratuito/económico en la nube).    
+   * API (Puente): Desplegar la carpeta backend que creamos a Firebase Functions o Render.
+
+
+  2. Adaptación para "Sucursales" (Lógica de Negocio)
+  Para manejar varias sucursales en una sola base de datos, debes aplicar un modelo Multi-tenant:
+   * Base de Datos: Cada tabla importante (Usuarios, Correspondencia, Inventario) debe tener una columna       
+     id_sucursal.
+   * Login: Cuando un empleado inicia sesión, la API debe devolver a qué sucursal pertenece.
+   * Filtros: Todas las consultas SQL deben incluir un WHERE id_sucursal = X para que una sede no vea los datos
+     de otra.
+
+
+  3. Instalación Universal
+   * Web: Ya está lista en Firebase Hosting. Cualquier navegador puede entrar.
+   * Desktop (Windows): Puedes generar un instalador (.exe) que se conecte a la misma API.
+   * Mobile (Android): El mismo código funcionará para los repartidores o gerentes.       
+
+  ---
+
+
+  Pasos Técnicos a Seguir (Guía de Programación)
+
+  Paso 1: Modificar las Tablas en tu Postgres
+  Debes añadir la identidad de la sucursal. Ejecuta esto en tu Postgres local:
+
+
+   1 CREATE TABLE sucursales (
+   2     id SERIAL PRIMARY KEY,
+   3     nombre VARCHAR(100),
+   4     ciudad VARCHAR(100)
+   5 );
+   6
+   7 -- Añadir a tus tablas existentes
+   8 ALTER TABLE usuarios ADD COLUMN id_sucursal INTEGER REFERENCES sucursales(id);
+   9 ALTER TABLE correspondencia ADD COLUMN id_sucursal INTEGER REFERENCES sucursales(id);
+
+
+  Paso 2: Unificar Flutter con el ApiClient
+  Debes dejar de usar DatabaseService directamente en tus pantallas. Todo debe pasar por ApiClient.
+  Ejemplo de cambio:
+   * Antes: db.connection.execute("SELECT * FROM...")
+   * Ahora: apiClient.query("SELECT * FROM...")
+
+
+  Paso 3: Desplegar la API (El Puente) a Internet
+  Para que no dependas de tu PC, vamos a subir el backend.
+   1. Crear una cuenta en Render.com (https://render.com) (es gratis para APIs de Node.js).
+   2. Conectar tu repositorio de GitHub.
+   3. Tu API tendrá una URL como: https://sistema-api.onrender.com.
+   4. Actualizar la baseUrl en tu lib/core/api/api_client.dart.
+
+
+  Paso 4: Seguridad (HTTPS / JWT)
+  Al estar en internet, cualquiera podría intentar atacar tu base de datos.
+   * La API que creamos ya usa JWT (Tokens). Debes asegurarte de que cada consulta a la API pida el token que se
+     generó al hacer login.
+
+  ---
+
+  Mi Recomendación Inmediata:
+  ¿Te gustaría que te ayude a modificar el `ApiClient` para que maneje automáticamente los Tokens de Seguridad y
+  así estemos listos para la conexión remota real?
+
+
+  También, si estás de acuerdo, podemos empezar a preparar el esquema de base de datos para "Sucursales". ¿Qué te  parece?
+
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀ > aste un plna de acion con todo eso para poder configurarlo  programarlo ademas dame los pasos  que yo deveria 
+   hacer fuera de esta terminal para poder ayudarte , paso a paso
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+✦ Este es el Plan Maestro de Transformación para convertir tu aplicación local en un Sistema Empresarial Remoto
+  Multi-sucursal.
+
+  ---
+
+
+  🗺️ Fase 1: Estructura Multi-sucursal (Base de Datos)
+  Debemos preparar tu PostgreSQL para manejar varias sedes.
+  Lo que yo haré: Crear el script SQL para actualizar tus tablas.
+  Lo que tú harás (Fuera de la terminal):
+   1. Abre tu gestor de base de datos (pgAdmin o DBeaver).
+   2. Ejecuta los comandos SQL que te proporcionaré para añadir las tablas de sucursales y las relaciones.       
+
+  ---
+
+
+  ☁️ Fase 2: Migración a la Nube (Infraestructura)
+  Tu PC no puede ser el servidor 24/7. Necesitamos un host real.
+  Lo que yo haré: Configurar el backend/index.js para que sea compatible con despliegue en la nube (usando       
+  variables de entorno).
+  Lo que tú harás (Fuera de la terminal):
+   1. Crea una cuenta en [Supabase.com](https://supabase.com): Es un Postgres gratuito en la nube.
+   2. Crea un nuevo proyecto y guarda la "Connection String" (te pediré que la pegues aquí o la guardes).        
+   3. Crea una cuenta en [Render.com](https://render.com): Aquí subiremos el código de tu API (Node.js) de forma 
+      gratuita.
+
+  ---
+
+
+  🔐 Fase 3: Seguridad y Tokens (Programación)
+  Para que el sistema sea remoto, debe ser seguro. No podemos dejar la DB abierta.
+  Lo que yo haré:
+   1. Refactorizar el ApiClient en Flutter para que guarde y envíe un JWT Token en cada petición.
+   2. Modificar la API para que verifique ese token antes de responder.
+  Lo que tú harás (Fuera de la terminal):
+   1. Probar el login desde la web una vez que actualicemos el código.
+
+  ---
+
+
+  🚀 Fase 4: Despliegue y Acceso Universal
+  Lo que yo haré:
+   1. Ejecutar el build final para Web.
+   2. Preparar el comando de despliegue a Firebase.
+  Lo que tú harás (Fuera de la terminal):
+   1. Entrar desde tu celular o desde otra computadora a la URL de Firebase para verificar que funciona fuera de 
+      tu red local.
+
+  ---
+
+  🛠️ PASO 1: Preparando tu Base de Datos (Acción Inmediata)
+
+
+  Voy a generar el script SQL necesario. Copia y ejecuta esto en tu pgAdmin ahora mismo:
+
+
+
+
+    1 -- 1. Crear tabla de sucursales
+    2 CREATE TABLE IF NOT EXISTS sucursales (
+    3     id SERIAL PRIMARY KEY,
+    4     nombre VARCHAR(100) NOT NULL,
+    5     direccion VARCHAR(200),
+    6     ciudad VARCHAR(100),
+    7     activo BOOLEAN DEFAULT TRUE
+    8 );
+    9
+   10 -- 2. Insertar sucursales de prueba
+   11 INSERT INTO sucursales (nombre, ciudad) VALUES ('Sede Central', 'Quito'), ('Sucursal Norte', 'Guayaquil'); 
+   12
+   13 -- 3. Vincular usuarios a sucursales (Si la tabla usuarios ya existe)
+   14 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS id_sucursal INTEGER REFERENCES sucursales(id);
+   15
+   16 -- 4. Vincular correspondencia a sucursales
+   17 ALTER TABLE correspondencia ADD COLUMN IF NOT EXISTS id_sucursal INTEGER REFERENCES sucursales(id);        
+   18
+   19 -- Actualizar usuarios actuales a la sucursal 1 por defecto
+   20 UPDATE usuarios SET id_sucursal = 1 WHERE id_sucursal IS NULL;
+
+  ---
+
+
+  🛠️ PASO 2: Mejorando la Seguridad del ApiClient (Yo lo hago ahora)
+
+  Voy a actualizar tu lib/core/api/api_client.dart para que maneje seguridad real.
+
+
+╭───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  Edit lib\core\api\api_client.dart: import 'package:dio/dio.dart';... => import 'package:dio/dio.dart'… │
+│                                                                                                           │
+│  1   import 'package:dio/dio.dart';                                                                       │
+│  2   import 'package:flutter/foundation.dart';                                                            │
+│  3 + import 'package:shared_preferences/shared_preferences.dart';                                         │
+│  4   import '../database/database_service.dart';                                                          │
+│  5                                                                                                        │
+│  6   class ApiClient {                                                                                    │
+│  7     static final ApiClient _instance = ApiClient._internal();                                          │
+│  8     factory ApiClient() => _instance;                                                                  │
+│  8 -   ApiClient._internal();                                                                             │
+│  9 +   ApiClient._internal() {                                                                            │
+│ 10 +     // Configurar interceptores para añadir el token automáticamente                                 │
+│ 11 +     _dio.interceptors.add(InterceptorsWrapper(                                                       │
+│ 12 +       onRequest: (options, handler) async {                                                          │
+│ 13 +         final prefs = await SharedPreferences.getInstance();                                         │
+│ 14 +         final token = prefs.getString('auth_token');                                                 │
+│ 15 +         if (token != null) {                                                                         │
+│ 16 +           options.headers['Authorization'] = 'Bearer $token';                                        │
+│ 17 +         }                                                                                            │
+│ 18 +         return handler.next(options);                                                                │
+│ 19 +       },                                                                                             │
+│ 20 +     ));                                                                                              │    
+│ 21 +   }                                                                                                  │    
+│ 22                                                                                                        │    
+│ 23     final _dio = Dio(BaseOptions(                                                                      │    
+│ 11 -     // Reemplazar con la URL de tu API desplegada en Firebase/Render/Heroku                          │    
+│ ═════════════════════════════════════════════════════════════════════════════════════════════════════════ │    
+│ 24 +     // CAMBIAR ESTO: Cuando tengas la URL de Render, ponla aquí                                      │    
+│ 25       baseUrl: kIsWeb ? 'http://localhost:3000/api' : 'http://192.168.0.26:3000/api',                  │    
+│ 26 +     connectTimeout: const Duration(seconds: 15),                                                     │    
+│ 27     ));                                                                                                │    
+│ 28                                                                                                        │    
+│ 15 -   // Función genérica para ejecutar una consulta                                                     │    
+│ ═════════════════════════════════════════════════════════════════════════════════════════════════════════ │    
+│ 29 +   // Guardar token después del login                                                                 │    
+│ 30 +   Future<void> saveToken(String token) async {                                                       │    
+│ 31 +     final prefs = await SharedPreferences.getInstance();                                             │    
+│ 32 +     await prefs.setString('auth_token', token);                                                      │    
+│ 33 +   }                                                                                                  │    
+│ 34 +                                                                                                      │    
+│ 35     Future<List<Map<String, dynamic>>> query(String sql, {List<dynamic>? params}) async {              │    
+│ 36       if (kIsWeb) {                                                                                    │    
+│ 18 -       // SI ES WEB: Usar el puente de la API (Node.js)                                               │    
+│ ═════════════════════════════════════════════════════════════════════════════════════════════════════════ │    
+│ 37         try {                                                                                          │    
+│ 38           final response = await _dio.post('/query', data: {                                           │    
+│ 39             'sql': sql,                                                                                │    
+│ 41           });                                                                                          │    
+│ 42           return List<Map<String, dynamic>>.from(response.data);                                       │    
+│ 43         } catch (e) {                                                                                  │    
+│ 26 -         throw Exception('Error en el puente de API: $e');                                            │    
+│ ═════════════════════════════════════════════════════════════════════════════════════════════════════════ │    
+│ 44 +         throw Exception('Error de conexión remota: $e');                                             │    
+│ 45         }                                                                                              │    
+│ 46       } else {                                                                                         │    
+│ 29 -       // SI NO ES WEB: Usar la conexión directa a Postgres (dart:io)                                 │    
+│ ═════════════════════════════════════════════════════════════════════════════════════════════════════════ │    
+│ 47         final db = DatabaseService();                                                                  │    
+│ 48         final connection = await db.connection;                                                        │    
+│ 49         final result = await connection.execute(                                                       │    
+│ 52             for (var i = 0; i < (params?.length ?? 0); i++) 'p${i + 1}': params![i]                    │    
+│ 53           },                                                                                           │    
+│ 54         );                                                                                             │    
+│ 38 -                                                                                                      │    
+│ 39 -       // Convertir el resultado a Map (formato compatible)                                           │    
+│ ═════════════════════════════════════════════════════════════════════════════════════════════════════════ │    
+│ 55         return result.map((row) => row.toColumnMap()).toList();                                        │    
+│ 56       }                                                                                                │    
+│ 57     }                                                                                                  │    
+│ 58                                                                                                        │    
+│ 44 -   // Ejemplo de login a través de la API                                                             │
+│ ═════════════════════════════════════════════════════════════════════════════════════════════════════════ │    
+│ 59     Future<Map<String, dynamic>> login(String usuario, String password) async {                        │    
+│ 60       try {                                                                                            │    
+│ 61         final response = await _dio.post('/auth/login', data: {                                        │    
+│ 62           'usuario': usuario,                                                                          │    
+│ 63           'password': password,                                                                        │    
+│ 64         });                                                                                            │    
+│ 51 -       return response.data;                                                                          │    
+│ ═════════════════════════════════════════════════════════════════════════════════════════════════════════ │    
+│ 65 +                                                                                                      │    
+│ 66 +       final data = response.data;                                                                    │    
+│ 67 +       if (data['token'] != null) {                                                                   │    
+│ 68 +         await saveToken(data['token']);                                                              │    
+│ 69 +       }                                                                                              │    
+│ 70 +       return data;                                                                                   │    
+│ 71       } catch (e) {                                                                                    │    
+│ 70 +       return data;                                                                                   │    
+│ 71       } catch (e) {                                                                                    │    
+│ 53 -       throw Exception('Error de autenticación: $e');                                                 │    
+│ ═════════════════════════════════════════════════════════════════════════════════════════════════════════ │    
+│ 72 +       throw Exception('Usuario o clave incorrectos');                                                │    
+│ 73       }                                                                                                │    
+│ 74     }                                                                                                  │    
+│ 75   }                                                                                                    │    
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────╯    
+✦ He actualizado el ApiClient para que maneje tokens de seguridad y guarde la sesión de forma persistente.       
+
+
+  Próximo paso: ¿Tienes ya tu cuenta de Supabase o Render?
+
+  Para poder avanzar con la Fase 2 (Migración a la Nube), necesito que hagas lo siguiente:
+
+
+   1. Crea tu proyecto en [Supabase.com](https://supabase.com).
+   2. Crea tu cuenta en [Render.com](https://render.com).
+   3. Dime si ya ejecutaste el SQL que te pasé en tu pgAdmin local.
+
+
+  Cuando tengas eso, subiré la API a Render y configuraremos la conexión para que ya no dependas de tu PC local. 
+  ¿Quieres que continúe configurando el resto del backend mientras haces eso?
