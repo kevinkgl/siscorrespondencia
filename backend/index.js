@@ -29,46 +29,29 @@ app.use(cors({
 app.use(express.json());
 
 // Configuración de la conexión a PostgreSQL
-// Usa los datos que encontré en tu DatabaseService de Flutter
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false // Requerido para Supabase/Render
-  }
+    rejectUnauthorized: false // Permite conexiones SSL a Supabase/Render
+  },
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
-// Probar conexión a la DB
-pool.query('SELECT NOW()', (err, res) => {
+// Probar conexión a la DB con log detallado
+pool.connect((err, client, release) => {
   if (err) {
-    console.error('Error conectando a Postgres:', err);
+    console.error('[DATABASE] Error crítico de conexión:', err.stack);
   } else {
-    console.log('Conexión a Postgres exitosa en:', res.rows[0].now);
+    console.log('[DATABASE] Conexión exitosa a Supabase desde el Backend');
+    release();
   }
 });
-
-// --- MIDDLEWARE DE SEGURIDAD ---
-
-// Middleware para verificar el token JWT
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Acceso denegado: Token no proporcionado' });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET || 'sistemacorrespondencia', (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Token inválido o expirado' });
-    }
-    req.user = user;
-    next();
-  });
-};
 
 // --- ENDPOINTS ---
 
-// Endpoint de Login
+// Endpoint de Login con manejo de errores detallado
 app.post('/api/auth/login', async (req, res) => {
   const { usuario, password } = req.body;
   
@@ -77,7 +60,6 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   try {
-    // Buscar usuario con JOIN para obtener nombres de rol y sucursal
     const sql = `
       SELECT u.id, u.username, u.nombre_completo, u.password_hash, 
              r.nombre as rol_nombre, s.nombre as sucursal_nombre, u.sucursal_id
@@ -89,92 +71,48 @@ app.post('/api/auth/login', async (req, res) => {
     const result = await pool.query(sql, [usuario]);
     
     if (result.rows.length === 0) {
-      console.log(`[LOGIN] Usuario no encontrado: ${usuario}`);
-      return res.status(401).json({ error: 'Credenciales incorrectas' });
+      return res.status(401).json({ error: 'Usuario no encontrado o inactivo' });
     }
 
     const user = result.rows[0];
-    
-    // VERIFICACIÓN ROBUSTA DE CONTRASEÑA
-    let validPassword = false;
-    
-    // Caso 1: Comparación directa (texto plano para admin inicial)
-    if (user.password_hash === password) {
-      validPassword = true;
-    } else {
-      // Caso 2: Intento con bcrypt
-      try {
-        validPassword = await bcrypt.compare(password, user.password_hash);
-      } catch (e) {
-        validPassword = false;
-      }
-    }
+    const validPassword = await bcrypt.compare(password, user.password_hash);
     
     if (!validPassword) {
-      console.log(`[LOGIN] Contraseña incorrecta para el usuario: ${usuario}`);
-      return res.status(401).json({ error: 'Credenciales incorrectas' });
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
 
-    // Generar un token JWT
     const token = jwt.sign(
-      { 
-        id: user.id, 
-        username: user.username, 
-        role: user.rol_nombre,
-        sucursal_id: user.sucursal_id 
-      }, 
+      { id: user.id, username: user.username, role: user.rol_nombre, sucursal_id: user.sucursal_id }, 
       process.env.JWT_SECRET || 'sistemacorrespondencia', 
       { expiresIn: '8h' }
     );
 
-    console.log(`[LOGIN SUCCESS] Usuario: ${usuario} ha iniciado sesión desde ${req.ip}`);
-
     res.json({ 
       token, 
       user: { 
-        id: user.id, 
-        username: user.username,
-        nombre_completo: user.nombre_completo,
-        rol_nombre: user.rol_nombre,
-        sucursal_nombre: user.sucursal_nombre,
-        sucursal_id: user.sucursal_id
+        id: user.id, username: user.username, nombre_completo: user.nombre_completo,
+        rol_nombre: user.rol_nombre, sucursal_nombre: user.sucursal_nombre, sucursal_id: user.sucursal_id
       } 
     });
   } catch (err) {
-    console.error('[LOGIN ERROR] Error en el servidor:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('[AUTH ERROR]', err.message);
+    res.status(500).json({ error: 'Error interno en el servidor de autenticación', detail: err.message });
   }
 });
 
-// Endpoint genérico para ejecutar consultas (Protegido por JWT y Validación de Sucursal)
+// Endpoint de consulta con try-catch global
 app.post('/api/query', authenticateToken, async (req, res) => {
   const { sql, params } = req.body;
-  const user = req.user;
-
   try {
-    // RESTRICCIÓN DE SEGURIDAD MULTI-SEDE
-    // Si el usuario no es ADMIN, validamos que no esté intentando ver datos de otra sucursal.
-    // Buscamos si el SQL menciona sucursales o correspondencia para aplicar filtros si faltan.
-    
-    if (user.role !== 'ADMIN') {
-      const sqlLower = sql.toLowerCase();
-      
-      // Ejemplo: Si la consulta es sobre correspondencia, debe haber un filtro de sucursal
-      if (sqlLower.includes('correspondencia') || sqlLower.includes('usuarios')) {
-        // En una implementación más robusta, usaríamos un parser SQL.
-        // Por ahora, confiamos en que el Repositorio de Flutter ya envía los filtros,
-        // pero aquí podríamos denegar si detectamos intentos de saltarse el filtrado.
-        
-        // Validación básica: Si params incluye un ID de sucursal, debe ser el del usuario
-        // Esta lógica se puede expandir según las necesidades de auditoría.
-      }
-    }
-
     const result = await pool.query(sql, params);
     res.json(result.rows);
   } catch (err) {
-    console.error(`[SEGURIDAD] Intento de consulta fallido por usuario ${user.username}:`, err.message);
-    res.status(500).json({ error: 'Error en la consulta de base de datos o permiso denegado' });
+    console.error('[QUERY ERROR]', { sql, error: err.message });
+    res.status(500).json({ 
+      error: 'Error en la consulta de base de datos', 
+      detail: err.message,
+      hint: 'Asegúrate de haber ejecutado el script SQL de migración en Supabase'
+    });
   }
 });
 

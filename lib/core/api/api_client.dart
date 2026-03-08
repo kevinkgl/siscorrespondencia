@@ -41,8 +41,12 @@ class ApiClient {
           'params': params ?? [],
         });
         return List<Map<String, dynamic>>.from(response.data);
+      } on DioException catch (e) {
+        final message = e.response?.data?['detail'] ?? e.message;
+        print('Error en Query Web: $message');
+        throw Exception('Error en servidor remoto: $message');
       } catch (e) {
-        throw Exception('Error de conexión remota: $e');
+        throw Exception('Error inesperado: $e');
       }
     } else {
       final db = DatabaseService();

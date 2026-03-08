@@ -153,4 +153,17 @@ Este archivo contiene el historial de cambios, propuestas de código y decisione
 **Impacto:**
 - **Plataformas Nativas (Windows/Android):** Ahora se conectan directamente a la nube.
 - **Plataforma Web:** Continúa usando el backend en Render, que a su vez se conecta a Supabase.
-- **Sincronización:** Los datos registrados en la app de Windows ahora se verán instantáneamente en la versión Web y Android.
+- Sincronización: Los datos registrados en la app de Windows ahora se verán instantáneamente en la versión Web y Android.
+
+---
+
+## [2026-03-08] - Despliegue de Producción y Sincronización Git
+**Objetivo:** Publicar la versión con base de datos en la nube y asegurar el código en el repositorio.
+
+**Acciones:**
+1. Generación de build web (`flutter build web --release`).
+2. Despliegue exitoso a Firebase Hosting.
+3. Commit y Push a GitHub sincronizando todos los cambios de configuración.
+
+**Estado:** Sistema centralizado y en producción.
+
