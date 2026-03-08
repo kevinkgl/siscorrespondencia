@@ -10,19 +10,26 @@ class CorrespondenceRepository {
   final _supabase = Supabase.instance.client;
 
   // Función para subir el archivo a la nube (Supabase Storage)
-  Future<String?> uploadFileToCloud(File file, String cite) async {
+  Future<String?> uploadFileToCloud(dynamic fileSource, String cite) async {
     try {
-      final extension = p.extension(file.path);
-      final fileName = '${cite.replaceAll('-', '_')}$extension';
+      final String fileName = 'adjunto_${cite.replaceAll('-', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
       
-      // Subir al bucket 'documentos' que creamos
-      await _supabase.storage.from('documentos').upload(
-        fileName,
-        file,
-        fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
-      );
+      // En la web, fileSource suele ser un Uint8List o un objeto de FilePicker
+      if (fileSource is File) {
+        await _supabase.storage.from('documentos').upload(
+          fileName,
+          fileSource,
+          fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+        );
+      } else {
+        // Soporte para Web (bytes)
+        await _supabase.storage.from('documentos').uploadBinary(
+          fileName,
+          fileSource,
+          fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+        );
+      }
 
-      // Obtener la URL pública para guardarla en la base de datos
       final String publicUrl = _supabase.storage.from('documentos').getPublicUrl(fileName);
       return publicUrl;
     } catch (e) {
@@ -192,16 +199,19 @@ class CorrespondenceRepository {
       params: [
         cite, tipoId, remitenteId, destinatarioId, destinatarioExterno,
         sucursalOrigenId, sucursalDestinoId, asunto, contenido,
-        clasificacion, prioridad, fechaLimite, cite, filePath, firmaUrl
+        clasificacion, prioridad, 
+        fechaLimite?.toIso8601String(), // CONVERSIÓN CRÍTICA PARA WEB
+        cite, filePath, firmaUrl
       ],
     );
 
-    final newId = result.first['id'] as int;
+    // FIX: Parseo robusto para evitar error "String is not a subtype of int" en Web
+    final newId = int.parse(result.first['id'].toString());
 
     await _apiClient.query(
       '''
       INSERT INTO seguimiento (correspondence_id, usuario_origen_id, accion, observaciones)
-      VALUES (\$1, \$2, 'REGISTRO', 'Documento registrado con adjunto digital')
+      VALUES ($1, $2, 'REGISTRO', 'Documento registrado con adjunto digital')
       ''',
       params: [newId, remitenteId],
     );

@@ -44,7 +44,8 @@ class _RegisterDocumentScreenState
   String _prioridad = 'NORMAL';
   String _generatedCite = 'Calculando...';
   DateTime? _fechaLimite;
-  File? _attachedFile;
+  dynamic _attachedFile; // Puede ser File (nativo) o Uint8List (web)
+  String? _attachedFileName;
   bool _isSaving = false;
   bool _isOnline = true;
 
@@ -79,10 +80,18 @@ class _RegisterDocumentScreenState
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'jpg', 'png'],
+      withData: true, // IMPORTANTE PARA WEB
     );
 
     if (result != null) {
-      setState(() => _attachedFile = File(result.files.single.path!));
+      setState(() {
+        if (kIsWeb) {
+          _attachedFile = result.files.single.bytes;
+        } else {
+          _attachedFile = File(result.files.single.path!);
+        }
+        _attachedFileName = result.files.single.name;
+      });
     }
   }
 
@@ -137,7 +146,7 @@ class _RegisterDocumentScreenState
         if (_attachedFile != null) {
           savedPath = await ref
               .read(correspondenceRepoProvider)
-              .uploadFileToCloud(_attachedFile!, _generatedCite);
+              .uploadFileToCloud(_attachedFile, _generatedCite);
         }
         
         // 2. Subir firma digital (si hay)
@@ -178,7 +187,7 @@ class _RegisterDocumentScreenState
           'clasificacion': _clasificacion,
           'prioridad': _prioridad,
           'fecha_limite': _fechaLimite?.toIso8601String(),
-          'file_path': _attachedFile?.path,
+          'file_path': kIsWeb ? 'web_upload' : _attachedFile?.path,
           'firma_digital': signatureBytes,
           'created_at': DateTime.now().toIso8601String(),
         });
@@ -435,7 +444,7 @@ class _RegisterDocumentScreenState
                 title: Text(
                   _attachedFile == null
                       ? 'Adjuntar Escaneo (Opcional)'
-                      : 'Archivo: ${_attachedFile!.path.split('\\').last}',
+                      : 'Archivo: ${_attachedFileName ?? "adjunto.pdf"}',
                 ),
                 subtitle: const Text('PDF, JPG o PNG'),
                 leading: Icon(
@@ -450,7 +459,10 @@ class _RegisterDocumentScreenState
                 trailing: _attachedFile != null
                     ? IconButton(
                         icon: const Icon(Icons.close, color: Colors.red),
-                        onPressed: () => setState(() => _attachedFile = null),
+                        onPressed: () => setState(() {
+                          _attachedFile = null;
+                          _attachedFileName = null;
+                        }),
                       )
                     : null,
               ),
