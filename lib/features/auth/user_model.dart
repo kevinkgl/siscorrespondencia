@@ -17,12 +17,12 @@ class UserModel {
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
-      id: map['id'],
+      id: int.parse(map['id'].toString()),
       username: map['username'],
       nombreCompleto: map['nombre_completo'],
       role: map['rol_nombre'],
       sucursal: map['sucursal_nombre'],
-      sucursalId: map['sucursal_id'],
+      sucursalId: int.parse(map['sucursal_id'].toString()),
     );
   }
 }

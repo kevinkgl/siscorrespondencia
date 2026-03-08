@@ -18,26 +18,32 @@ class UserRepository {
     final result = await _apiClient.query(sql);
     
     return result.map((row) => {
-      'id': row['id'],
+      'id': int.parse(row['id'].toString()),
       'username': row['username'],
       'nombre_completo': row['nombre_completo'],
       'email': row['email'],
       'rol': row['rol_nombre'],
       'sucursal': row['sucursal_nombre'],
       'activo': row['activo'],
-      'role_id': row['role_id'],
-      'sucursal_id': row['sucursal_id'],
+      'role_id': int.parse(row['role_id'].toString()),
+      'sucursal_id': int.parse(row['sucursal_id'].toString()),
     }).toList();
   }
 
   Future<List<Map<String, dynamic>>> getRoles() async {
     final result = await _apiClient.query('SELECT id, nombre FROM roles');
-    return result;
+    return result.map((row) => {
+      'id': int.parse(row['id'].toString()),
+      'nombre': row['nombre'],
+    }).toList();
   }
 
   Future<List<Map<String, dynamic>>> getSucursales() async {
     final result = await _apiClient.query('SELECT id, nombre FROM sucursales WHERE deleted_at IS NULL');
-    return result;
+    return result.map((row) => {
+      'id': int.parse(row['id'].toString()),
+      'nombre': row['nombre'],
+    }).toList();
   }
 
   Future<void> createUser({

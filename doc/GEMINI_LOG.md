@@ -98,3 +98,14 @@ Este archivo contiene el historial de cambios, propuestas de código y decisione
 **URL de Producción:** https://sistemacorrespondencia-3fbba.web.app
 
 ---
+
+## [2026-03-07] - Corrección en Gestión de Usuarios (Web)
+**Problema:** Error `TypeError: "1": type 'String' is not a subtype of type 'int'` al listar y crear usuarios.
+
+**Soluciones Aplicadas:**
+- **Modelo:** Actualización de `UserModel.fromMap` con parseo robusto (`int.parse`) para los campos `id` y `sucursalId`.
+- **Repositorio:** Actualización de `UserRepository` (`getUsers`, `getRoles`, `getSucursales`) para asegurar que todos los IDs sean tratados como integers antes de llegar a la UI.
+
+**Estado:** Pendiente de redespliegue.
+
+---
