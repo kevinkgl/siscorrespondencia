@@ -211,7 +211,7 @@ class CorrespondenceRepository {
     await _apiClient.query(
       '''
       INSERT INTO seguimiento (correspondence_id, usuario_origen_id, accion, observaciones)
-      VALUES ($1, $2, 'REGISTRO', 'Documento registrado con adjunto digital')
+      VALUES (\$1, \$2, 'REGISTRO', 'Documento registrado con adjunto digital')
       ''',
       params: [newId, remitenteId],
     );

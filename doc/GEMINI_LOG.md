@@ -84,6 +84,17 @@ Este archivo contiene el historial de cambios, propuestas de código y decisione
 - **UI:** Migración de `File` a `dynamic` (Uint8List en Web / File en Nativo) para el manejo de adjuntos.
 - **API:** Mejora en el método `uploadFileToCloud` para soportar carga de bytes directos a Supabase.
 
-**Estado:** Pendiente de nuevo despliegue y verificación en producción.
+**Estado:** Despliegue completado con éxito.
+
+---
+
+## [2026-03-07] - Despliegue Web Finalizado
+**Acciones:**
+- Corrección de sintaxis SQL (escape de `$`) en el repositorio.
+- Adición de importación `foundation.dart` para soporte de `kIsWeb`.
+- Ejecución exitosa de `flutter build web --release`.
+- Despliegue final a Firebase Hosting.
+
+**URL de Producción:** https://sistemacorrespondencia-3fbba.web.app
 
 ---
