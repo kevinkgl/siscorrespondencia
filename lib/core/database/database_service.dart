@@ -33,30 +33,29 @@ class DatabaseService {
   }
 
   Future<void> _connect() async {
-    // Detectar host automáticamente
-    // Si es Android y no estamos en emulador, usamos la IP de la PC
-    // Si es Escritorio, usamos localhost
-    String host = 'localhost';
-    if (!kIsWeb && Platform.isAndroid) {
-      host = '192.168.0.26'; // Tu IP de PC
-    }
+    // Configuración para Supabase Cloud
+    const String host = 'db.yemhcbdyxcuflvhvhsmo.supabase.co';
+    const String user = 'postgres';
+    const String dbName = 'postgres';
+    const String pass = 'Keyler2020..'; // Asegúrate de que esta sea la contraseña de tu proyecto de Supabase
 
     try {
       _connection = await Connection.open(
         Endpoint(
           host: host,
-          database: 'sistema_correspondencia',
-          username: 'postgres',
-          password: 'kegala',
+          database: dbName,
+          username: user,
+          password: pass,
         ),
         settings: const ConnectionSettings(
-          sslMode: SslMode.disable,
-          connectTimeout: Duration(seconds: 10),
+          sslMode: SslMode.require, // Requerido para Supabase
+          connectTimeout: Duration(seconds: 20),
+          queryTimeout: Duration(seconds: 30),
         ),
       );
-      developer.log('Conexión a PostgreSQL establecida en $host');
+      developer.log('Conexión a Supabase establecida exitosamente');
     } catch (e) {
-      developer.log('Error al conectar a PostgreSQL en $host: $e');
+      developer.log('Error al conectar a Supabase: $e');
       rethrow;
     }
   }

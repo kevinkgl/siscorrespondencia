@@ -1,0 +1,1030 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict WIyWh7Oc4tX15CfZuBE17n19MfTUx0CYgobLK4dVR1Zmdyi4SWhYy1F2IxbInDl
+
+-- Dumped from database version 16.11
+-- Dumped by pg_dump version 16.11
+
+-- Started on 2026-03-08 12:40:28
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 238 (class 1259 OID 32889)
+-- Name: adjuntos; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.adjuntos (
+    id integer NOT NULL,
+    correspondence_id integer,
+    nombre_archivo character varying(255) NOT NULL,
+    file_url text NOT NULL,
+    tipo_mime character varying(100),
+    subido_por integer,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.adjuntos OWNER TO postgres;
+
+--
+-- TOC entry 237 (class 1259 OID 32888)
+-- Name: adjuntos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.adjuntos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.adjuntos_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4923 (class 0 OID 0)
+-- Dependencies: 237
+-- Name: adjuntos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.adjuntos_id_seq OWNED BY public.adjuntos.id;
+
+
+--
+-- TOC entry 218 (class 1259 OID 25212)
+-- Name: archivos_documento; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.archivos_documento (
+    id integer NOT NULL,
+    documento_id integer NOT NULL,
+    ruta_archivo character varying(500) NOT NULL,
+    nombre_archivo character varying(255) NOT NULL,
+    tipo_mime character varying(100),
+    fecha_subida timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.archivos_documento OWNER TO postgres;
+
+--
+-- TOC entry 217 (class 1259 OID 25211)
+-- Name: archivos_documento_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.archivos_documento_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.archivos_documento_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4924 (class 0 OID 0)
+-- Dependencies: 217
+-- Name: archivos_documento_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.archivos_documento_id_seq OWNED BY public.archivos_documento.id;
+
+
+--
+-- TOC entry 224 (class 1259 OID 25274)
+-- Name: auditoria_eventos; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.auditoria_eventos (
+    id integer NOT NULL,
+    usuario_id integer,
+    tipo_evento character varying(50) NOT NULL,
+    recurso_id integer,
+    detalles text,
+    fecha_hora timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.auditoria_eventos OWNER TO postgres;
+
+--
+-- TOC entry 223 (class 1259 OID 25273)
+-- Name: auditoria_eventos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.auditoria_eventos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.auditoria_eventos_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4925 (class 0 OID 0)
+-- Dependencies: 223
+-- Name: auditoria_eventos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.auditoria_eventos_id_seq OWNED BY public.auditoria_eventos.id;
+
+
+--
+-- TOC entry 234 (class 1259 OID 32823)
+-- Name: correspondencia; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.correspondencia (
+    id integer NOT NULL,
+    cite_numero character varying(50) NOT NULL,
+    tipo_id integer,
+    remitente_id integer,
+    remitente_externo character varying(200),
+    destinatario_id integer,
+    destinatario_externo character varying(200),
+    sucursal_origen_id integer,
+    sucursal_destino_id integer,
+    asunto character varying(255) NOT NULL,
+    contenido text,
+    clasificacion character varying(20),
+    estado character varying(20) DEFAULT 'REGISTRADO'::character varying,
+    prioridad character varying(20) DEFAULT 'NORMAL'::character varying,
+    fecha_emision timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    fecha_limite timestamp without time zone,
+    qr_data text,
+    file_path text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    deleted_at timestamp without time zone,
+    firma_digital text,
+    firma_url text,
+    CONSTRAINT correspondencia_clasificacion_check CHECK (((clasificacion)::text = ANY ((ARRAY['PUBLICA'::character varying, 'PRIVADA'::character varying, 'CONFIDENCIAL'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.correspondencia OWNER TO postgres;
+
+--
+-- TOC entry 233 (class 1259 OID 32822)
+-- Name: correspondencia_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.correspondencia_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.correspondencia_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4926 (class 0 OID 0)
+-- Dependencies: 233
+-- Name: correspondencia_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.correspondencia_id_seq OWNED BY public.correspondencia.id;
+
+
+--
+-- TOC entry 220 (class 1259 OID 25227)
+-- Name: derivaciones; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.derivaciones (
+    id integer NOT NULL,
+    documento_id integer NOT NULL,
+    remitente_id integer NOT NULL,
+    destinatario_id integer NOT NULL,
+    fecha_derivacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    fecha_recepcion timestamp with time zone,
+    proveido text
+);
+
+
+ALTER TABLE public.derivaciones OWNER TO postgres;
+
+--
+-- TOC entry 219 (class 1259 OID 25226)
+-- Name: derivaciones_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.derivaciones_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.derivaciones_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4927 (class 0 OID 0)
+-- Dependencies: 219
+-- Name: derivaciones_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.derivaciones_id_seq OWNED BY public.derivaciones.id;
+
+
+--
+-- TOC entry 216 (class 1259 OID 25188)
+-- Name: documentos; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.documentos (
+    id integer NOT NULL,
+    cite character varying(50) NOT NULL,
+    asunto text NOT NULL,
+    contenido text,
+    creador_id integer NOT NULL,
+    tipo_documento_id integer NOT NULL,
+    confidencialidad public.nivel_confidencialidad DEFAULT 'Publico'::public.nivel_confidencialidad NOT NULL,
+    estado public.estado_documento DEFAULT 'En redaccion'::public.estado_documento NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    fecha_limite_respuesta date
+);
+
+
+ALTER TABLE public.documentos OWNER TO postgres;
+
+--
+-- TOC entry 215 (class 1259 OID 25187)
+-- Name: documentos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.documentos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.documentos_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4928 (class 0 OID 0)
+-- Dependencies: 215
+-- Name: documentos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.documentos_id_seq OWNED BY public.documentos.id;
+
+
+--
+-- TOC entry 222 (class 1259 OID 25252)
+-- Name: plantillas; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.plantillas (
+    id integer NOT NULL,
+    nombre character varying(100) NOT NULL,
+    contenido text NOT NULL,
+    tipo_documento_id integer,
+    creador_id integer NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.plantillas OWNER TO postgres;
+
+--
+-- TOC entry 221 (class 1259 OID 25251)
+-- Name: plantillas_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.plantillas_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.plantillas_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4929 (class 0 OID 0)
+-- Dependencies: 221
+-- Name: plantillas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.plantillas_id_seq OWNED BY public.plantillas.id;
+
+
+--
+-- TOC entry 228 (class 1259 OID 32782)
+-- Name: roles; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.roles (
+    id integer NOT NULL,
+    nombre character varying(50) NOT NULL
+);
+
+
+ALTER TABLE public.roles OWNER TO postgres;
+
+--
+-- TOC entry 227 (class 1259 OID 32781)
+-- Name: roles_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.roles_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.roles_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4930 (class 0 OID 0)
+-- Dependencies: 227
+-- Name: roles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.roles_id_seq OWNED BY public.roles.id;
+
+
+--
+-- TOC entry 236 (class 1259 OID 32864)
+-- Name: seguimiento; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.seguimiento (
+    id integer NOT NULL,
+    correspondence_id integer,
+    usuario_origen_id integer,
+    usuario_destino_id integer,
+    accion character varying(100),
+    observaciones text,
+    fecha_movimiento timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.seguimiento OWNER TO postgres;
+
+--
+-- TOC entry 235 (class 1259 OID 32863)
+-- Name: seguimiento_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.seguimiento_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.seguimiento_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4931 (class 0 OID 0)
+-- Dependencies: 235
+-- Name: seguimiento_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.seguimiento_id_seq OWNED BY public.seguimiento.id;
+
+
+--
+-- TOC entry 226 (class 1259 OID 32769)
+-- Name: sucursales; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.sucursales (
+    id integer NOT NULL,
+    nombre character varying(100) NOT NULL,
+    codigo_sucursal character varying(10) NOT NULL,
+    direccion text,
+    es_oficina_central boolean DEFAULT false,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    deleted_at timestamp without time zone
+);
+
+
+ALTER TABLE public.sucursales OWNER TO postgres;
+
+--
+-- TOC entry 225 (class 1259 OID 32768)
+-- Name: sucursales_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.sucursales_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.sucursales_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4932 (class 0 OID 0)
+-- Dependencies: 225
+-- Name: sucursales_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.sucursales_id_seq OWNED BY public.sucursales.id;
+
+
+--
+-- TOC entry 240 (class 1259 OID 40965)
+-- Name: sync_log; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.sync_log (
+    id integer NOT NULL,
+    correspondencia_local_id text,
+    accion character varying(50),
+    status character varying(20) DEFAULT 'PENDING'::character varying,
+    payload jsonb,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    synced_at timestamp without time zone
+);
+
+
+ALTER TABLE public.sync_log OWNER TO postgres;
+
+--
+-- TOC entry 239 (class 1259 OID 40964)
+-- Name: sync_log_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.sync_log_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.sync_log_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4933 (class 0 OID 0)
+-- Dependencies: 239
+-- Name: sync_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.sync_log_id_seq OWNED BY public.sync_log.id;
+
+
+--
+-- TOC entry 232 (class 1259 OID 32814)
+-- Name: tipos_documento; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.tipos_documento (
+    id integer NOT NULL,
+    nombre character varying(50) NOT NULL,
+    prefijo character varying(10) NOT NULL,
+    descripcion text
+);
+
+
+ALTER TABLE public.tipos_documento OWNER TO postgres;
+
+--
+-- TOC entry 231 (class 1259 OID 32813)
+-- Name: tipos_documento_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.tipos_documento_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tipos_documento_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4934 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: tipos_documento_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.tipos_documento_id_seq OWNED BY public.tipos_documento.id;
+
+
+--
+-- TOC entry 230 (class 1259 OID 32791)
+-- Name: usuarios; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.usuarios (
+    id integer NOT NULL,
+    username character varying(50) NOT NULL,
+    password_hash text NOT NULL,
+    nombre_completo character varying(100) NOT NULL,
+    email character varying(100),
+    role_id integer,
+    sucursal_id integer,
+    activo boolean DEFAULT true,
+    last_login timestamp without time zone,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    deleted_at timestamp without time zone
+);
+
+
+ALTER TABLE public.usuarios OWNER TO postgres;
+
+--
+-- TOC entry 229 (class 1259 OID 32790)
+-- Name: usuarios_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.usuarios_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.usuarios_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4935 (class 0 OID 0)
+-- Dependencies: 229
+-- Name: usuarios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.usuarios_id_seq OWNED BY public.usuarios.id;
+
+
+--
+-- TOC entry 4714 (class 2604 OID 32892)
+-- Name: adjuntos id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.adjuntos ALTER COLUMN id SET DEFAULT nextval('public.adjuntos_id_seq'::regclass);
+
+
+--
+-- TOC entry 4691 (class 2604 OID 25215)
+-- Name: archivos_documento id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.archivos_documento ALTER COLUMN id SET DEFAULT nextval('public.archivos_documento_id_seq'::regclass);
+
+
+--
+-- TOC entry 4697 (class 2604 OID 25277)
+-- Name: auditoria_eventos id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.auditoria_eventos ALTER COLUMN id SET DEFAULT nextval('public.auditoria_eventos_id_seq'::regclass);
+
+
+--
+-- TOC entry 4707 (class 2604 OID 32826)
+-- Name: correspondencia id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.correspondencia ALTER COLUMN id SET DEFAULT nextval('public.correspondencia_id_seq'::regclass);
+
+
+--
+-- TOC entry 4693 (class 2604 OID 25230)
+-- Name: derivaciones id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.derivaciones ALTER COLUMN id SET DEFAULT nextval('public.derivaciones_id_seq'::regclass);
+
+
+--
+-- TOC entry 4687 (class 2604 OID 25191)
+-- Name: documentos id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.documentos ALTER COLUMN id SET DEFAULT nextval('public.documentos_id_seq'::regclass);
+
+
+--
+-- TOC entry 4695 (class 2604 OID 25255)
+-- Name: plantillas id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plantillas ALTER COLUMN id SET DEFAULT nextval('public.plantillas_id_seq'::regclass);
+
+
+--
+-- TOC entry 4702 (class 2604 OID 32785)
+-- Name: roles id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.roles ALTER COLUMN id SET DEFAULT nextval('public.roles_id_seq'::regclass);
+
+
+--
+-- TOC entry 4712 (class 2604 OID 32867)
+-- Name: seguimiento id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.seguimiento ALTER COLUMN id SET DEFAULT nextval('public.seguimiento_id_seq'::regclass);
+
+
+--
+-- TOC entry 4699 (class 2604 OID 32772)
+-- Name: sucursales id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sucursales ALTER COLUMN id SET DEFAULT nextval('public.sucursales_id_seq'::regclass);
+
+
+--
+-- TOC entry 4716 (class 2604 OID 40968)
+-- Name: sync_log id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sync_log ALTER COLUMN id SET DEFAULT nextval('public.sync_log_id_seq'::regclass);
+
+
+--
+-- TOC entry 4706 (class 2604 OID 32817)
+-- Name: tipos_documento id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tipos_documento ALTER COLUMN id SET DEFAULT nextval('public.tipos_documento_id_seq'::regclass);
+
+
+--
+-- TOC entry 4703 (class 2604 OID 32794)
+-- Name: usuarios id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.usuarios ALTER COLUMN id SET DEFAULT nextval('public.usuarios_id_seq'::regclass);
+
+
+--
+-- TOC entry 4757 (class 2606 OID 32897)
+-- Name: adjuntos adjuntos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.adjuntos
+    ADD CONSTRAINT adjuntos_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4726 (class 2606 OID 25220)
+-- Name: archivos_documento archivos_documento_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.archivos_documento
+    ADD CONSTRAINT archivos_documento_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4734 (class 2606 OID 25282)
+-- Name: auditoria_eventos auditoria_eventos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.auditoria_eventos
+    ADD CONSTRAINT auditoria_eventos_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4750 (class 2606 OID 32837)
+-- Name: correspondencia correspondencia_cite_numero_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.correspondencia
+    ADD CONSTRAINT correspondencia_cite_numero_key UNIQUE (cite_numero);
+
+
+--
+-- TOC entry 4752 (class 2606 OID 32835)
+-- Name: correspondencia correspondencia_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.correspondencia
+    ADD CONSTRAINT correspondencia_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4728 (class 2606 OID 25235)
+-- Name: derivaciones derivaciones_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.derivaciones
+    ADD CONSTRAINT derivaciones_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4721 (class 2606 OID 25200)
+-- Name: documentos documentos_cite_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.documentos
+    ADD CONSTRAINT documentos_cite_key UNIQUE (cite);
+
+
+--
+-- TOC entry 4723 (class 2606 OID 25198)
+-- Name: documentos documentos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.documentos
+    ADD CONSTRAINT documentos_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4730 (class 2606 OID 25262)
+-- Name: plantillas plantillas_nombre_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plantillas
+    ADD CONSTRAINT plantillas_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 4732 (class 2606 OID 25260)
+-- Name: plantillas plantillas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plantillas
+    ADD CONSTRAINT plantillas_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4740 (class 2606 OID 32789)
+-- Name: roles roles_nombre_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.roles
+    ADD CONSTRAINT roles_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 4742 (class 2606 OID 32787)
+-- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.roles
+    ADD CONSTRAINT roles_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4755 (class 2606 OID 32872)
+-- Name: seguimiento seguimiento_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.seguimiento
+    ADD CONSTRAINT seguimiento_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4736 (class 2606 OID 32780)
+-- Name: sucursales sucursales_codigo_sucursal_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sucursales
+    ADD CONSTRAINT sucursales_codigo_sucursal_key UNIQUE (codigo_sucursal);
+
+
+--
+-- TOC entry 4738 (class 2606 OID 32778)
+-- Name: sucursales sucursales_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sucursales
+    ADD CONSTRAINT sucursales_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4759 (class 2606 OID 40974)
+-- Name: sync_log sync_log_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sync_log
+    ADD CONSTRAINT sync_log_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4748 (class 2606 OID 32821)
+-- Name: tipos_documento tipos_documento_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tipos_documento
+    ADD CONSTRAINT tipos_documento_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4744 (class 2606 OID 32800)
+-- Name: usuarios usuarios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT usuarios_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4746 (class 2606 OID 32802)
+-- Name: usuarios usuarios_username_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT usuarios_username_key UNIQUE (username);
+
+
+--
+-- TOC entry 4753 (class 1259 OID 40961)
+-- Name: idx_correspondencia_fts; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_correspondencia_fts ON public.correspondencia USING gin (to_tsvector('spanish'::regconfig, (((COALESCE(asunto, ''::character varying))::text || ' '::text) || COALESCE(contenido, ''::text))));
+
+
+--
+-- TOC entry 4724 (class 1259 OID 25288)
+-- Name: idx_documentos_asunto; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_documentos_asunto ON public.documentos USING gin (to_tsvector('spanish'::regconfig, asunto));
+
+
+--
+-- TOC entry 4774 (class 2620 OID 40975)
+-- Name: correspondencia trg_notify_correspondence; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER trg_notify_correspondence AFTER INSERT ON public.correspondencia FOR EACH ROW EXECUTE FUNCTION public.notify_new_correspondence();
+
+
+--
+-- TOC entry 4772 (class 2606 OID 32898)
+-- Name: adjuntos adjuntos_correspondencia_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.adjuntos
+    ADD CONSTRAINT adjuntos_correspondencia_id_fkey FOREIGN KEY (correspondence_id) REFERENCES public.correspondencia(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4773 (class 2606 OID 32903)
+-- Name: adjuntos adjuntos_subido_por_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.adjuntos
+    ADD CONSTRAINT adjuntos_subido_por_fkey FOREIGN KEY (subido_por) REFERENCES public.usuarios(id);
+
+
+--
+-- TOC entry 4764 (class 2606 OID 32848)
+-- Name: correspondencia correspondencia_destinatario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.correspondencia
+    ADD CONSTRAINT correspondencia_destinatario_id_fkey FOREIGN KEY (destinatario_id) REFERENCES public.usuarios(id);
+
+
+--
+-- TOC entry 4765 (class 2606 OID 32843)
+-- Name: correspondencia correspondencia_remitente_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.correspondencia
+    ADD CONSTRAINT correspondencia_remitente_id_fkey FOREIGN KEY (remitente_id) REFERENCES public.usuarios(id);
+
+
+--
+-- TOC entry 4766 (class 2606 OID 32858)
+-- Name: correspondencia correspondencia_sucursal_destino_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.correspondencia
+    ADD CONSTRAINT correspondencia_sucursal_destino_id_fkey FOREIGN KEY (sucursal_destino_id) REFERENCES public.sucursales(id);
+
+
+--
+-- TOC entry 4767 (class 2606 OID 32853)
+-- Name: correspondencia correspondencia_sucursal_origen_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.correspondencia
+    ADD CONSTRAINT correspondencia_sucursal_origen_id_fkey FOREIGN KEY (sucursal_origen_id) REFERENCES public.sucursales(id);
+
+
+--
+-- TOC entry 4768 (class 2606 OID 32838)
+-- Name: correspondencia correspondencia_tipo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.correspondencia
+    ADD CONSTRAINT correspondencia_tipo_id_fkey FOREIGN KEY (tipo_id) REFERENCES public.tipos_documento(id);
+
+
+--
+-- TOC entry 4760 (class 2606 OID 25221)
+-- Name: archivos_documento fk_documento; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.archivos_documento
+    ADD CONSTRAINT fk_documento FOREIGN KEY (documento_id) REFERENCES public.documentos(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4761 (class 2606 OID 25236)
+-- Name: derivaciones fk_documento; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.derivaciones
+    ADD CONSTRAINT fk_documento FOREIGN KEY (documento_id) REFERENCES public.documentos(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4769 (class 2606 OID 32873)
+-- Name: seguimiento seguimiento_correspondencia_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.seguimiento
+    ADD CONSTRAINT seguimiento_correspondencia_id_fkey FOREIGN KEY (correspondence_id) REFERENCES public.correspondencia(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4770 (class 2606 OID 32883)
+-- Name: seguimiento seguimiento_usuario_destino_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.seguimiento
+    ADD CONSTRAINT seguimiento_usuario_destino_id_fkey FOREIGN KEY (usuario_destino_id) REFERENCES public.usuarios(id);
+
+
+--
+-- TOC entry 4771 (class 2606 OID 32878)
+-- Name: seguimiento seguimiento_usuario_origen_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.seguimiento
+    ADD CONSTRAINT seguimiento_usuario_origen_id_fkey FOREIGN KEY (usuario_origen_id) REFERENCES public.usuarios(id);
+
+
+--
+-- TOC entry 4762 (class 2606 OID 32803)
+-- Name: usuarios usuarios_role_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT usuarios_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id);
+
+
+--
+-- TOC entry 4763 (class 2606 OID 32808)
+-- Name: usuarios usuarios_sucursal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT usuarios_sucursal_id_fkey FOREIGN KEY (sucursal_id) REFERENCES public.sucursales(id);
+
+
+-- Completed on 2026-03-08 12:40:29
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict WIyWh7Oc4tX15CfZuBE17n19MfTUx0CYgobLK4dVR1Zmdyi4SWhYy1F2IxbInDl
+

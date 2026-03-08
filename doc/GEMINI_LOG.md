@@ -109,3 +109,48 @@ Este archivo contiene el historial de cambios, propuestas de código y decisione
 **Estado:** Pendiente de redespliegue.
 
 ---
+
+## [2026-03-08] - Análisis de Conectividad Híbrida (PostgreSQL vs Supabase)
+**Objetivo:** Clarificar el funcionamiento de la aplicación con bases de datos locales y remotas.
+
+**Hallazgos Técnicos:**
+1. **PostgreSQL Local:** Utilizado por las versiones **nativas (Windows/Android)** a través de `DatabaseService`. Se conecta directamente a `localhost` o una IP local configurada.
+2. **Supabase (Vía Backend):** Utilizado por la versión **Web**. Las consultas viajan al backend en Render (`https://siscorrespondencia.onrender.com/api`), el cual se conecta a una base de datos de Supabase mediante la variable `DATABASE_URL`.
+3. **Supabase SDK (Storage):** Utilizado en **todas las plataformas** exclusivamente para el almacenamiento de archivos (adjuntos y firmas). Se inicializa en `main.dart`.
+
+**Configuraciones Identificadas:**
+- **Host Local:** `192.168.0.26` (Android) / `localhost` (Windows).
+- **URL Supabase (Storage):** `https://yemhcbdyxcuflvhvhsmo.supabase.co`.
+- **Backend URL:** `https://siscorrespondencia.onrender.com/api`.
+
+**Conclusión:** La app es compatible con ambos entornos, funcionando de forma local para nativo y remota para web por defecto.
+
+---
+
+## [2026-03-08] - Plan de Migración de Base de Datos a Supabase
+**Objetivo:** Centralizar la base de datos en la nube (Supabase) para que todas las plataformas compartan la misma información.
+
+**Acciones:**
+1. Análisis del backup local `doc/sistema_correspondencia`.
+2. Generación de script SQL de migración compatible con Supabase (Schema, Constraints y Datos iniciales).
+3. Definición de estrategia para actualizar `DatabaseService` en Flutter.
+
+**Impacto:**
+- Eliminación de la dependencia de base de datos local.
+- Sincronización en tiempo real entre Windows, Android y Web.
+- Escalabilidad del sistema.
+
+---
+
+## [2026-03-08] - Migración a Base de Datos en la Nube (Supabase)
+**Acción:** Cambio de conexión de base de datos local a Supabase Cloud.
+
+**Cambios Técnicos:**
+1. **`lib/core/database/database_service.dart`:** Se actualizó el método `_connect()` para conectarse directamente a `db.yemhcbdyxcuflvhvhsmo.supabase.co`.
+2. **Seguridad:** Se habilitó `SslMode.require` para cumplir con los estándares de Supabase.
+3. **Optimización:** Se eliminó la detección de host local (`localhost`, IP) para forzar el uso de la base de datos centralizada.
+
+**Impacto:**
+- **Plataformas Nativas (Windows/Android):** Ahora se conectan directamente a la nube.
+- **Plataforma Web:** Continúa usando el backend en Render, que a su vez se conecta a Supabase.
+- **Sincronización:** Los datos registrados en la app de Windows ahora se verán instantáneamente en la versión Web y Android.
