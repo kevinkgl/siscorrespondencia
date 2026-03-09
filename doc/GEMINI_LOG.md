@@ -196,3 +196,48 @@ Este archivo contiene el historial de cambios, propuestas de código y decisione
 
 **Estado:** Corregido en Supabase.
 
+---
+
+## [2026-03-08] - Reestructuración Integral de Esquema (Diagnóstico de Logs)
+**Problema:** Múltiples errores `column does not exist` al registrar correspondencia y ver estadísticas.
+
+**Diagnóstico mediante Logs en Tiempo Real:**
+- Errores en `destinatario_id` y `remitente_id` (Faltaban en la tabla `correspondencia`).
+- Error en `sucursal_origen_id` (Necesaria para estadísticas por sede).
+- Error en `created_at` (El código de CITEs usa esta columna para el filtro de año).
+- Discrepancia en `tipo_id` vs `tipo_documento_id`.
+
+**Solución Aplicada:**
+1. Ejecución de script SQL masivo en Supabase para alinear el esquema con la lógica del `CorrespondenceRepository` de Flutter.
+2. Unificación de nombres de columnas para remitentes y destinatarios (Nacional vs Externo).
+3. Habilitación de columnas de auditoría estándar (`created_at`, `deleted_at`).
+
+**Resultado:** Compatibilidad total de la base de datos con las operaciones de registro y consulta de la aplicación.
+
+---
+
+## [2026-03-08] - Limpieza de Datos de Prueba (Reseteo de Tablas)
+**Objetivo:** Reiniciar el sistema para entorno de producción manteniendo la configuración de acceso.
+
+**Acciones:**
+1. Ejecución de `TRUNCATE` con `RESTART IDENTITY` en tablas de correspondencia, derivaciones, seguimiento y adjuntos.
+2. Preservación de tablas maestras: `usuarios`, `roles`, `sucursales`.
+3. Reinicio de correlativos de CITEs en la tabla `tipos_documento`.
+
+**Impacto:**
+- El sistema inicia con el contador de documentos en 1.
+- No se pierden las credenciales de administrador ni las sucursales configuradas.
+
+---
+
+## [2026-03-09] - Corrección de Restricción NOT NULL (Columna Referencia)
+**Problema:** Error `Severity.error 23502: null value in column "referencia"` al finalizar el registro de correspondencia.
+
+**Causa:** La base de datos migrada desde el backup local tenía la columna `referencia` como obligatoria, pero la lógica actual de la aplicación utiliza las columnas `asunto` y `contenido` de forma independiente, dejando la columna original vacía.
+
+**Solución:**
+1. Se aplicó un `ALTER COLUMN` para permitir valores nulos en la columna `referencia`.
+2. Se verificó la consistencia de `sucursal_origen_id` para asegurar que las estadísticas de la bandeja de entrada carguen correctamente.
+
+**Estado:** Resuelto. El registro ahora se completa exitosamente en Supabase.
+

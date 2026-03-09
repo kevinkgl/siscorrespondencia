@@ -49,15 +49,23 @@ class ApiClient {
         throw Exception('Error inesperado: $e');
       }
     } else {
-      final db = DatabaseService();
-      final connection = await db.connection;
-      
-      // Convertimos el SQL de estilo $1 a parámetros posicionales estándar
-      final result = await connection.execute(
-        sql,
-        parameters: params ?? [],
-      );
-      return result.map((row) => row.toColumnMap()).toList();
+      try {
+        final db = DatabaseService();
+        final connection = await db.connection;
+        
+        final result = await connection.execute(
+          sql,
+          parameters: params ?? [],
+        );
+        return result.map((row) => row.toColumnMap()).toList();
+      } catch (e) {
+        print('--- ERROR SQL DETECTADO ---');
+        print('Consulta: $sql');
+        print('Parámetros: $params');
+        print('Error: $e');
+        print('---------------------------');
+        rethrow;
+      }
     }
   }
 
