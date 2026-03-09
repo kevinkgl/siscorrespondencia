@@ -241,3 +241,17 @@ Este archivo contiene el historial de cambios, propuestas de código y decisione
 
 **Estado:** Resuelto. El registro ahora se completa exitosamente en Supabase.
 
+---
+
+## [2026-03-09] - Creación de Tablas Relacionales (Seguimiento y Derivaciones)
+**Problema:** Error `relation "seguimiento" does not exist` al finalizar el registro. Fallo en la inserción del historial de auditoría.
+
+**Causa:** Las tablas de flujo de trabajo (`seguimiento` y `derivaciones`) no fueron creadas en la migración inicial a Supabase o tenían nombres de columnas inconsistentes con el código (`correspondence_id`).
+
+**Solución:**
+1. Creación de la tabla `seguimiento` con la estructura esperada por el repositorio de Flutter.
+2. Creación de la tabla `derivaciones` para soportar el flujo de correspondencia entre usuarios.
+3. Limpieza de registros huérfanos generados por transacciones incompletas.
+
+**Estado:** Tablas creadas. El flujo de registro y seguimiento ahora es funcional.
+

@@ -281,31 +281,33 @@ class CorrespondenceRepository {
     int paramCount = 1;
 
     if (query != null && query.isNotEmpty) {
-      sql += ''' AND (
-        to_tsvector('spanish', coalesce(c.asunto, '') || ' ' || coalesce(c.contenido, '')) @@ plainto_tsquery('spanish', \$\$paramCount)
-        OR c.cite_numero ILIKE \$\$paramCount 
-        OR u.nombre_completo ILIKE \$\$paramCount
-      )''';
+      sql += """ AND (
+        c.asunto ILIKE \$${paramCount} 
+        OR c.contenido ILIKE \$${paramCount}
+        OR c.cite_numero ILIKE \$${paramCount} 
+        OR u.nombre_completo ILIKE \$${paramCount}
+      )""";
       params.add('%$query%'); 
       paramCount++;
     }
 
     if (sucursalId != null) {
-      sql += ' AND (c.sucursal_origen_id = \$\$paramCount OR c.sucursal_destino_id = \$\$paramCount)';
+      sql += ' AND (c.sucursal_origen_id = \$${paramCount} OR c.sucursal_destino_id = \$${paramCount})';
       params.add(sucursalId);
       paramCount++;
     }
 
     if (estado != null) {
-      sql += ' AND c.estado = \$\$paramCount';
+      sql += ' AND c.estado = \$${paramCount}';
       params.add(estado);
       paramCount++;
     }
 
     if (startDate != null && endDate != null) {
-      sql += ' AND c.fecha_emision BETWEEN \$\$paramCount AND \$\$${paramCount + 1}';
-      params.add(startDate);
-      params.add(endDate);
+      sql += ' AND c.fecha_emision BETWEEN \$${paramCount} AND \$${paramCount + 1}';
+      params.add(startDate.toIso8601String());
+      params.add(endDate.toIso8601String());
+      paramCount += 2;
     }
 
     sql += ' ORDER BY c.fecha_emision DESC LIMIT 100';
