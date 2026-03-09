@@ -167,3 +167,32 @@ Este archivo contiene el historial de cambios, propuestas de código y decisione
 
 **Estado:** Sistema centralizado y en producción.
 
+---
+
+## [2026-03-08] - Corrección de Esquema en Supabase (Soft Delete)
+**Problema:** Error `column "deleted_at" does not exist` detectado durante la ejecución en Windows al intentar cargar sucursales.
+
+**Causa:** El código de la aplicación (Repository) espera soporte para borrado lógico (`deleted_at`), pero el esquema inicial migrado no contenía esta columna.
+
+**Solución:**
+1. Se identificaron las tablas afectadas: `sucursales`, `usuarios`, `roles`, `tipos_documento`, `correspondencia`.
+2. Se generó un script `ALTER TABLE` para añadir la columna `deleted_at` con soporte de zona horaria.
+
+**Resultado:** Compatibilidad restaurada entre el código Dart y la base de datos Supabase.
+
+---
+
+## [2026-03-08] - Sincronización de Columnas (CITE y Correspondencia)
+**Problema:** Errores `column "tipo_id" does not exist` y fallo al generar CITE preliminar.
+
+**Causa:**
+1. Discrepancia de nombres: El código esperaba `tipo_id` pero la base de datos tenía `tipo_documento_id`.
+2. Faltaban columnas de control secuencial (`gestion`, `numero_secuencial`) necesarias para la lógica de generación de CITEs institucionales.
+
+**Solución:**
+1. Renombramiento de la columna `tipo_documento_id` a `tipo_id`.
+2. Creación de columnas `gestion` y `numero_secuencial` en la tabla `correspondencia`.
+3. Adición de `correlativo_actual` en `tipos_documento` para mantener el conteo de documentos por tipo.
+
+**Estado:** Corregido en Supabase.
+

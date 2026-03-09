@@ -37,7 +37,7 @@ class DatabaseService {
     const String host = 'db.yemhcbdyxcuflvhvhsmo.supabase.co';
     const String user = 'postgres';
     const String dbName = 'postgres';
-    const String pass = 'Keyler2020..'; // Asegúrate de que esta sea la contraseña de tu proyecto de Supabase
+    const String pass = 'KKjjj1234...kf4'; // Contraseña actualizada para Supabase
 
     try {
       _connection = await Connection.open(
