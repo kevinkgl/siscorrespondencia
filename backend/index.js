@@ -8,24 +8,8 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configuración de CORS segura
-const allowedOrigins = [
-  'https://sistemacorrespondencia-3fbba.web.app',
-  'https://sistemacorrespondencia-3fbba.firebaseapp.com',
-  'http://localhost:3000',
-  'http://localhost:5000'
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    // Permitir peticiones sin origen (como apps móviles nativas o herramientas de prueba)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error('Acceso bloqueado por política de CORS'), false);
-    }
-    return callback(null, true);
-  }
-}));
+// Configuración de CORS flexible para permitir desarrollo local y despliegues
+app.use(cors());
 app.use(express.json());
 
 // Configuración de la conexión a PostgreSQL

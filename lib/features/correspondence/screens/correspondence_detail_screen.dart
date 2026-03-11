@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -33,29 +33,21 @@ class _CorrespondenceDetailScreenState
     if (widget.doc.filePath == null) return;
 
     try {
-      final Uri url = Uri.parse(widget.doc.filePath!);
+      final String path = widget.doc.filePath!;
+      final Uri uri = path.startsWith('http') 
+          ? Uri.parse(path) 
+          : Uri.file(path);
       
-      if (widget.doc.filePath!.startsWith('http')) {
-        // Abrir URL externa (Supabase)
-        if (await canLaunchUrl(url)) {
-          await launchUrl(url, mode: LaunchMode.externalApplication);
-        } else {
-          throw 'No se pudo abrir la URL: ${widget.doc.filePath}';
-        }
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        // Abrir archivo local en Windows
-        if (Platform.isWindows) {
-          await Process.run('explorer.exe', [widget.doc.filePath!]);
-        } else {
-          if (await canLaunchUrl(url)) {
-            await launchUrl(url);
-          }
-        }
+        // Si canLaunchUrl falla, intentamos lanzarlo de todos modos (algunos navegadores lo requieren)
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al abrir el documento: $e')),
+          SnackBar(content: Text('No se pudo abrir el documento: $e')),
         );
       }
     }
