@@ -40,31 +40,49 @@ class CorrespondenceModel {
   });
 
   factory CorrespondenceModel.fromMap(Map<String, dynamic> map) {
-    return CorrespondenceModel(
-      id: map['id'],
-      cite: map['cite_numero'],
-      tipo: map['tipo_nombre'],
-      remitente: map['remitente_nombre'],
-      destinatario: map['destinatario_nombre'],
-      destinatarioExterno: map['destinatario_externo'],
-      asunto: map['asunto'],
-      contenido: map['contenido'],
-      estado: map['estado'],
-      clasificacion: map['clasificacion'],
-      prioridad: map['prioridad'],
-      fechaEmision: map['fecha_emision'] is String 
-          ? DateTime.parse(map['fecha_emision']) 
-          : map['fecha_emision'],
-      fechaLimite: map['fecha_limite'] != null 
-          ? (map['fecha_limite'] is String 
-              ? DateTime.parse(map['fecha_limite']) 
-              : map['fecha_limite'])
-          : null,
-      filePath: map['file_path'],
-      sucursalOrigen: map['sucursal_origen_nombre'],
-      sucursalDestino: map['sucursal_destino_nombre'],
-      firmaUrl: map['firma_url'],
-    );
+    try {
+      // Función auxiliar para parsear fechas de forma segura
+      DateTime? parseDate(dynamic value) {
+        if (value == null) return null;
+        if (value is DateTime) return value;
+        if (value is String) return DateTime.tryParse(value);
+        return null;
+      }
+
+      return CorrespondenceModel(
+        id: int.tryParse(map['id']?.toString() ?? '0') ?? 0,
+        cite: map['cite_numero']?.toString() ?? 'SIN-CITE',
+        tipo: map['tipo_nombre']?.toString() ?? 'DOCUMENTO',
+        remitente: map['remitente_nombre']?.toString() ?? 'REMITENTE DESCONOCIDO',
+        destinatario: map['destinatario_nombre']?.toString(),
+        destinatarioExterno: map['destinatario_externo']?.toString(),
+        asunto: map['asunto']?.toString() ?? '(Sin Asunto)',
+        contenido: map['contenido']?.toString(),
+        estado: map['estado']?.toString() ?? 'REGISTRADO',
+        clasificacion: map['clasificacion']?.toString() ?? 'PUBLICA',
+        prioridad: map['prioridad']?.toString() ?? 'NORMAL',
+        fechaEmision: parseDate(map['fecha_emision']) ?? DateTime.now(),
+        fechaLimite: parseDate(map['fecha_limite']),
+        filePath: map['file_path']?.toString(),
+        sucursalOrigen: map['sucursal_origen_nombre']?.toString(),
+        sucursalDestino: map['sucursal_destino_nombre']?.toString(),
+        firmaUrl: map['firma_url']?.toString(),
+      );
+    } catch (e) {
+      print('Error al mapear CorrespondenceModel: $e');
+      // Devolver un modelo de error básico para no romper la lista entera
+      return CorrespondenceModel(
+        id: 0,
+        cite: 'ERROR',
+        tipo: 'ERROR',
+        remitente: 'ERROR',
+        asunto: 'Error al cargar este registro',
+        estado: 'ERROR',
+        clasificacion: 'ERROR',
+        prioridad: 'NORMAL',
+        fechaEmision: DateTime.now(),
+      );
+    }
   }
 
   String get deadlineStatus {

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../auth/auth_provider.dart';
 import '../models/correspondence_model.dart';
 import '../models/tracking_model.dart';
@@ -28,15 +29,34 @@ class _CorrespondenceDetailScreenState
     _refreshTracking();
   }
 
-  void _openFile() {
-    if (widget.doc.filePath != null) {
-      // Si es una URL de Supabase, la abrimos en el navegador
+  Future<void> _openFile() async {
+    if (widget.doc.filePath == null) return;
+
+    try {
+      final Uri url = Uri.parse(widget.doc.filePath!);
+      
       if (widget.doc.filePath!.startsWith('http')) {
-        // En una app real usaríamos url_launcher
-        // Por ahora simulamos la apertura de la URL
-        print('Abriendo URL: ${widget.doc.filePath}');
+        // Abrir URL externa (Supabase)
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        } else {
+          throw 'No se pudo abrir la URL: ${widget.doc.filePath}';
+        }
       } else {
-        Process.run('explorer.exe', [widget.doc.filePath!]);
+        // Abrir archivo local en Windows
+        if (Platform.isWindows) {
+          await Process.run('explorer.exe', [widget.doc.filePath!]);
+        } else {
+          if (await canLaunchUrl(url)) {
+            await launchUrl(url);
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al abrir el documento: $e')),
+        );
       }
     }
   }

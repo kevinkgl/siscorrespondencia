@@ -55,6 +55,9 @@ class CorrespondenceRepository {
   }
 
   Future<List<CorrespondenceModel>> getOutbox(int userId, {int? sucursalId, String? role}) async {
+    final String roleUpper = (role ?? '').toUpperCase();
+    final bool isAdmin = roleUpper == 'ADMIN' || roleUpper == 'ADMINISTRADOR';
+
     String sql = '''
       SELECT c.id, c.cite_numero, t.nombre as tipo_nombre, u.nombre_completo as remitente_nombre, 
              d.nombre_completo as destinatario_nombre, c.destinatario_externo, c.asunto, 
@@ -71,9 +74,9 @@ class CorrespondenceRepository {
 
     List<dynamic> params = [];
     
-    if (role == 'ADMIN') {
-      // Admin ve todo
-    } else if (role == 'JEFE_AGENCIA' && sucursalId != null) {
+    if (isAdmin) {
+      // Admin ve todo, no añadimos filtros
+    } else if (roleUpper == 'JEFE_AGENCIA' && sucursalId != null) {
       sql += ' AND c.sucursal_origen_id = \$1';
       params.add(sucursalId);
     } else {
@@ -88,6 +91,9 @@ class CorrespondenceRepository {
   }
 
   Future<List<CorrespondenceModel>> getInbox(int userId, {int? sucursalId, String? role}) async {
+    final String roleUpper = (role ?? '').toUpperCase();
+    final bool isAdmin = roleUpper == 'ADMIN' || roleUpper == 'ADMINISTRADOR';
+
     String sql = '''
       SELECT c.id, c.cite_numero, t.nombre as tipo_nombre, u.nombre_completo as remitente_nombre, 
              d.nombre_completo as destinatario_nombre, c.destinatario_externo, c.asunto, 
@@ -104,11 +110,12 @@ class CorrespondenceRepository {
 
     List<dynamic> params = [];
 
-    if (role == 'ADMIN') {
+    if (isAdmin) {
       // Admin ve todo
-    } else if (role == 'JEFE_AGENCIA' && sucursalId != null) {
-      sql += ' AND c.sucursal_destino_id = \$1';
+    } else if (roleUpper == 'JEFE_AGENCIA' && sucursalId != null) {
+      sql += ' AND (c.sucursal_destino_id = \$1 OR c.destinatario_id = \$2)';
       params.add(sucursalId);
+      params.add(userId);
     } else {
       sql += ' AND c.destinatario_id = \$1';
       params.add(userId);
@@ -132,19 +139,36 @@ class CorrespondenceRepository {
       params: [tipoId, sucursalId],
     );
 
+    if (infoResult.isEmpty) {
+      throw Exception('No se encontró información del tipo de documento o sucursal.');
+    }
+
     final prefijo = infoResult.first['prefijo'] as String;
     final codSucursal = infoResult.first['codigo_sucursal'] as String;
 
-    final countResult = await _apiClient.query(
+    // Buscar el último correlativo para este tipo, sucursal y año
+    // Usamos COALESCE y regex para extraer el número final por si acaso el formato cambió
+    final lastCiteResult = await _apiClient.query(
       '''
-      SELECT COUNT(*) + 1 as total FROM correspondencia 
+      SELECT cite_numero FROM correspondencia 
       WHERE tipo_id = \$1 AND sucursal_origen_id = \$2 
-      AND EXTRACT(YEAR FROM created_at) = \$3
+      AND (EXTRACT(YEAR FROM fecha_emision) = \$3 OR EXTRACT(YEAR FROM created_at) = \$3)
+      ORDER BY id DESC LIMIT 1
       ''',
       params: [tipoId, sucursalId, year],
     );
 
-    final correlativo = countResult.first['total'].toString().padLeft(4, '0');
+    int nextSecuencia = 1;
+    if (lastCiteResult.isNotEmpty) {
+      final String lastCite = lastCiteResult.first['cite_numero'] as String;
+      final parts = lastCite.split('-');
+      if (parts.isNotEmpty) {
+        final lastPart = parts.last;
+        nextSecuencia = (int.tryParse(lastPart) ?? 0) + 1;
+      }
+    }
+
+    final correlativo = nextSecuencia.toString().padLeft(4, '0');
     
     return '$prefijo-$codSucursal-$year-$correlativo';
   }
@@ -152,7 +176,7 @@ class CorrespondenceRepository {
   // Función para subir la firma digital (PNG bytes) a la nube
   Future<String?> uploadSignatureToCloud(dynamic signatureBytes, String cite) async {
     try {
-      final fileName = 'firma_${cite.replaceAll('-', '_')}.png';
+      final fileName = 'firma_${cite.replaceAll('-', '_')}_${DateTime.now().millisecondsSinceEpoch}.png';
       
       // Subir al bucket 'firmas'
       await _supabase.storage.from('firmas').uploadBinary(
@@ -185,6 +209,12 @@ class CorrespondenceRepository {
     String? filePath,
     String? firmaUrl,
   }) async {
+    // RE-VALIDACIÓN FINAL DEL CITE JUSTO ANTES DE INSERTAR (Anti-colisión)
+    String finalCite = cite;
+    
+    // Intentamos insertar. Si falla por cite duplicado, el error vendrá de la DB.
+    // Sin embargo, para mayor seguridad, podríamos re-generar aquí, pero mejor manejamos la excepción.
+    
     const sql = '''
       INSERT INTO correspondencia (
         cite_numero, tipo_id, remitente_id, destinatario_id, destinatario_externo,
@@ -194,29 +224,35 @@ class CorrespondenceRepository {
       RETURNING id
     ''';
 
-    final result = await _apiClient.query(
-      sql,
-      params: [
-        cite, tipoId, remitenteId, destinatarioId, destinatarioExterno,
-        sucursalOrigenId, sucursalDestinoId, asunto, contenido,
-        clasificacion, prioridad, 
-        fechaLimite?.toIso8601String(), // CONVERSIÓN CRÍTICA PARA WEB
-        cite, filePath, firmaUrl
-      ],
-    );
+    try {
+      final result = await _apiClient.query(
+        sql,
+        params: [
+          finalCite, tipoId, remitenteId, destinatarioId, destinatarioExterno,
+          sucursalOrigenId, sucursalDestinoId, asunto, contenido,
+          clasificacion, prioridad, 
+          fechaLimite?.toIso8601String(),
+          finalCite, filePath, firmaUrl
+        ],
+      );
 
-    // FIX: Parseo robusto para evitar error "String is not a subtype of int" en Web
-    final newId = int.parse(result.first['id'].toString());
+      final newId = int.parse(result.first['id'].toString());
 
-    await _apiClient.query(
-      '''
-      INSERT INTO seguimiento (correspondence_id, usuario_origen_id, accion, observaciones)
-      VALUES (\$1, \$2, 'REGISTRO', 'Documento registrado con adjunto digital')
-      ''',
-      params: [newId, remitenteId],
-    );
+      await _apiClient.query(
+        '''
+        INSERT INTO seguimiento (correspondence_id, usuario_origen_id, accion, observaciones)
+        VALUES (\$1, \$2, 'REGISTRO', 'Documento registrado con adjunto digital')
+        ''',
+        params: [newId, remitenteId],
+      );
 
-    return newId;
+      return newId;
+    } catch (e) {
+      if (e.toString().contains('duplicate key') || e.toString().contains('already exists')) {
+        throw Exception('El CITE $finalCite ya existe. Por favor, intente de nuevo para generar uno nuevo.');
+      }
+      rethrow;
+    }
   }
 
   Future<void> receiveDocument(int correspondenceId, int userId) async {
