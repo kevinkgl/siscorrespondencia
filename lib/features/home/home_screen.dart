@@ -274,12 +274,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         barGroups: data.asMap().entries.map((
                                           e,
                                         ) {
+                                          final rawValue = e.value['value'];
+                                          final double yValue = rawValue is num 
+                                              ? rawValue.toDouble() 
+                                              : double.tryParse(rawValue.toString()) ?? 0.0;
+                                          
                                           return BarChartGroupData(
                                             x: e.key,
                                             barRods: [
                                               BarChartRodData(
-                                                toY: (e.value['value'] as int)
-                                                    .toDouble(),
+                                                toY: yValue,
                                                 color: Colors.blue,
                                                 width: 20,
                                               ),

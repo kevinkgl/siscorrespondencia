@@ -17,12 +17,14 @@ class TrackingModel {
 
   factory TrackingModel.fromMap(Map<String, dynamic> map) {
     return TrackingModel(
-      id: map['id'],
-      usuarioOrigen: map['usuario_origen_nombre'],
+      id: map['id'] is int ? map['id'] : int.parse(map['id'].toString()),
+      usuarioOrigen: map['usuario_origen_nombre'] ?? 'Sistema',
       usuarioDestino: map['usuario_destino_nombre'],
-      accion: map['accion'],
+      accion: map['accion'] ?? '',
       observaciones: map['observaciones'],
-      fechaMovimiento: map['fecha_movimiento'],
+      fechaMovimiento: map['fecha_movimiento'] is DateTime 
+          ? map['fecha_movimiento'] 
+          : DateTime.parse(map['fecha_movimiento'].toString()),
     );
   }
 }
